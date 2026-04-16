@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:firebase_core/firebase_core.dart'; 
+import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+
 import 'app/routes/app_pages.dart';
+import 'app/core/theme/app_theme.dart'; // Import file theme yang baru dibuat
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inisialisasi Firebase berdasarkan platform (Android/iOS)
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -19,10 +19,10 @@ void main() async {
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      
+      // TERAPIN TEMA
+      theme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark, // Paksa selalu dark mode sesuai vibe
     ),
   );
 }

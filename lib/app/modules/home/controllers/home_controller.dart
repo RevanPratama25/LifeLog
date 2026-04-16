@@ -1,22 +1,21 @@
 import 'package:get/get.dart';
 
 class HomeController extends GetxController {
-  final count = 0.obs;
+  // Dummy data untuk UI
+  final userName = 'Revan'.obs; 
+  final streakDays = 5.obs;
+  final totalLogsToday = 3.obs;
+  final finishedToday = 3.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-  }
+  // List dummy untuk Task (Fokus Hari Ini)
+  final todayTasks = [
+    {'title': 'Praktikum Jaringan', 'isDone': false},
+    {'title': 'Review Materi GetX', 'isDone': false},
+  ].obs;
 
-  @override
-  void onReady() {
-    super.onReady();
-  }
-
-  @override
-  void onClose() {
-    super.onClose();
-  }
-
-  void increment() => count.value++;
+  // List dummy untuk Log (Refleksi Terbaru)
+  final recentLogs = [
+    {'title': 'Setup Firebase', 'note': 'Jangan lupa rules firestore di-update ke test mode.'},
+    {'title': 'Bikin UI Design', 'note': 'Pilih warna ice frost blue.'},
+  ].obs;
 }
