@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:life_log_frontend/app/routes/app_pages.dart';
 import '../controllers/home_controller.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -40,12 +41,12 @@ class HomeView extends GetView<HomeController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Obx(() => Text(
-                  'Halo, ${controller.userName.value} 👋',
+                  'Hello, ${controller.userName.value}',
                   style: Get.textTheme.displayMedium,
                 )),
             const SizedBox(height: 4),
             Text(
-              'Kamis, 16 April 2026', // Nanti pakai library intl buat tanggal dinamis
+              'Thursday, 16 April 2026',
               style: Get.textTheme.bodyMedium,
             ),
           ],
@@ -63,11 +64,10 @@ class HomeView extends GetView<HomeController> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
         boxShadow: [
-          // Ini efek GLOW-nya 🔥
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.15),
+            color: AppColors.primary.withValues(alpha: 0.1),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -75,42 +75,80 @@ class HomeView extends GetView<HomeController> {
       ),
       child: Column(
         children: [
+          // Bagian 1: Donut Graphic (Task Progress)
           Stack(
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 100,
-                height: 100,
-                child: CircularProgressIndicator(
-                  value: 0.7, // Dummy progress
-                  strokeWidth: 8,
-                  backgroundColor: AppColors.background,
-                  color: AppColors.primary,
-                ),
+                width: 120,
+                height: 120,
+                child: Obx(() => CircularProgressIndicator(
+                      value: controller.taskProgress,
+                      strokeWidth: 10,
+                      strokeCap: StrokeCap.round, // Bikin ujung garis membulat (lebih modern)
+                      backgroundColor: AppColors.background,
+                      color: AppColors.primary,
+                    )),
               ),
               Column(
                 children: [
-                  const Icon(Icons.local_fire_department, color: AppColors.primary, size: 28),
                   Obx(() => Text(
-                        '${controller.streakDays.value}',
-                        style: Get.textTheme.displayLarge?.copyWith(color: AppColors.primary),
+                        controller.progressPercentage,
+                        style: Get.textTheme.displayMedium?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       )),
+                  Text('Selesai', style: Get.textTheme.bodyMedium),
                 ],
               )
             ],
           ),
+          
+          const SizedBox(height: 24),
+          const Divider(color: Colors.white10),
           const SizedBox(height: 16),
-          Text('Hari Streak Terjaga!', style: Get.textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Obx(() => Text(
-                'Total Log: ${controller.totalLogsToday.value} | Selesai Hari Ini: ${controller.finishedToday.value}',
-                style: Get.textTheme.bodyMedium,
+
+          // Bagian 2: Horizontal Fire Streak
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('STREAK AKTIF', style: Get.textTheme.labelLarge?.copyWith(letterSpacing: 1.2)),
+                  Obx(() => Text('${controller.streakDays.value} Hari', 
+                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold))),
+                ],
+              ),
+              const SizedBox(height: 12),
+              
+              // Barisan Api Horizontal
+              Obx(() => Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(
+                  controller.streakDays.value,
+                  (index) => Icon(
+                    Icons.local_fire_department,
+                    color: AppColors.primary,
+                    size: 28,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 10,
+                        color: AppColors.primary.withValues(alpha: 0.8),
+                      ),
+                    ],
+                  ),
+                ),
               )),
+            ],
+          ),
         ],
       ),
     );
   }
-
+    
   // 3. QUICK ACTIONS
   Widget _buildQuickActions() {
     return Row(
@@ -127,8 +165,14 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _actionButton(String title, IconData icon, {required bool isPrimary}) {
-    return InkWell(
-      onTap: () {}, // Nanti diisi route Get.toNamed()
+  return InkWell(
+    onTap: () {
+      // Kirim argumen berupa Map untuk menentukan mode
+      Get.toNamed(
+        Routes.ADD_ENTRY, 
+        arguments: {'isTask': isPrimary},
+      );
+    },
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -190,7 +234,7 @@ class HomeView extends GetView<HomeController> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.surface.withOpacity(0.5),
+                      color: AppColors.surface.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppColors.surface),
                     ),

@@ -8,10 +8,8 @@ import 'app/core/theme/app_theme.dart'; // Import file theme yang baru dibuat
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(
     GetMaterialApp(
@@ -19,7 +17,7 @@ void main() async {
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
       debugShowCheckedModeBanner: false,
-      
+
       // TERAPIN TEMA
       theme: AppTheme.darkTheme,
       themeMode: ThemeMode.dark, // Paksa selalu dark mode sesuai vibe
