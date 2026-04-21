@@ -15,8 +15,8 @@ class BaseController extends GetxController {
   final List<Widget> screens = [
     const HomeView(),
     const TaskView(),
-    const TimelineView(),
     const ReflectionsView(),
+    const TimelineView(),
   ];
 
   void changePage(int index) {

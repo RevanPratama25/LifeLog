@@ -26,7 +26,9 @@ class BaseView extends GetView<BaseController> {
     return FloatingActionButton(
       backgroundColor: AppColors.primary,
       elevation: 10,
-      shape: const CircleBorder(),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), // Radius 16
+      ),
       onPressed: () {
         if (index == 1) {
           // Tab Tasks: Otomatis mode Task
@@ -115,14 +117,14 @@ class BaseView extends GetView<BaseController> {
               label: 'Tasks',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.timeline),
-              activeIcon: Icon(Icons.timeline),
-              label: 'Timeline',
-            ),
-            BottomNavigationBarItem(
               icon: Icon(Icons.lightbulb_outline),
               activeIcon: Icon(Icons.lightbulb),
               label: 'Insights',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.timeline),
+              activeIcon: Icon(Icons.timeline),
+              label: 'Timeline',
             ),
           ],
         ),
