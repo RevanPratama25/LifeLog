@@ -9,49 +9,73 @@ class TimelineView extends GetView<TimelineController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text('Riwayat Aktivitas', style: Get.textTheme.titleLarge),
-        centerTitle: true,
-      ),
-      body: Obx(() {
-        if (controller.historyLogs.isEmpty) {
-          return const Center(child: Text('Belum ada aktivitas tercatat.'));
-        }
+      appBar: _buildCustomAppBar(), // 🔥 1. Pakai Custom AppBar
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 🔥 2. Pindahkan Judul ke sini
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Text('Riwayat Aktivitas', style: Get.textTheme.displayMedium?.copyWith(fontWeight: FontWeight.bold)),
+          ),
+          
+          Expanded(
+            child: Obx(() {
+              if (controller.historyLogs.isEmpty) {
+                return const Center(child: Text('Belum ada aktivitas tercatat.'));
+              }
 
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          itemCount: controller.historyLogs.length,
-          itemBuilder: (context, index) {
-            final log = controller.historyLogs[index];
-            final isLast = index == controller.historyLogs.length - 1;
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                itemCount: controller.historyLogs.length,
+                itemBuilder: (context, index) {
+                  final log = controller.historyLogs[index];
+                  final isLast = index == controller.historyLogs.length - 1;
 
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // BAGIAN KIRI: Garis Waktu & Glow Dot
-                  _buildTimelineNode(isLast),
-                  
-                  const SizedBox(width: 16),
-                  
-                  // BAGIAN KANAN: Card Konten
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 24.0),
-                      child: _buildLogCard(log),
+                  return IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildTimelineNode(isLast),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 24.0),
+                            child: _buildLogCard(log),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      }),
+                  );
+                },
+              );
+            }),
+          ),
+          const SizedBox(height: 80), // Biar gak ketutup navbar bawah
+        ],
+      ),
     );
   }
 
+  // 🔥 3. Fungsi Custom AppBar
+  AppBar _buildCustomAppBar() {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      title: Row(
+        children: [
+          Icon(Icons.bubble_chart, color: AppColors.primary, size: 28),
+          const SizedBox(width: 8),
+          Text('LIFELOG', style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+        ],
+      ),
+      actions: [
+        IconButton(icon: const Icon(Icons.notifications_none, color: Colors.white70), onPressed: () {}),
+        const CircleAvatar(radius: 14, backgroundImage: NetworkImage('https://i.pravatar.cc/100')),
+        const SizedBox(width: 24),
+      ],
+    );
+  }
   // Komponen pembentuk garis dan titik bercahaya
   Widget _buildTimelineNode(bool isLast) {
     return Column(

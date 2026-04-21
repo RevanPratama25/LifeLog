@@ -35,7 +35,7 @@ class AppPages {
   AppPages._();
 
   // Halaman pertama yang muncul saat aplikasi dibuka
-  static const INITIAL = Routes.LOGIN;
+  static const INITIAL = Routes.BASE;
 
   static final routes = [
     GetPage(

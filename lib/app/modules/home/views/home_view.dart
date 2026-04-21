@@ -10,6 +10,7 @@ class HomeView extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: _buildCustomAppBar(), 
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -25,6 +26,7 @@ class HomeView extends GetView<HomeController> {
               _buildTodayFocus(),
               const SizedBox(height: 32),
               _buildRecentReflections(),
+              const SizedBox(height: 80), // Biar gak ketutup Floating Navbar
             ],
           ),
         ),
@@ -32,26 +34,40 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  // 1. HEADER
+  //Fungsi Custom AppBar
+  AppBar _buildCustomAppBar() {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      title: Row(
+        children: [
+          Icon(Icons.bubble_chart, color: AppColors.primary, size: 28),
+          const SizedBox(width: 8),
+          Text('LIFELOG', style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+        ],
+      ),
+      actions: [
+        IconButton(icon: const Icon(Icons.notifications_none, color: Colors.white70), onPressed: () {}),
+        const CircleAvatar(radius: 14, backgroundImage: NetworkImage('https://i.pravatar.cc/100')),
+        const SizedBox(width: 24),
+      ],
+    );
+  }
+
+
   Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Obx(() => Text(
-                  'Hello, ${controller.userName.value}',
-                  style: Get.textTheme.displayMedium,
-                )),
-            const SizedBox(height: 4),
-            Text(
-              'Thursday, 16 April 2026',
-              style: Get.textTheme.bodyMedium,
-            ),
-          ],
+        Obx(() => Text(
+              'Halo, ${controller.userName.value} ',
+              style: Get.textTheme.displayMedium,
+            )),
+        const SizedBox(height: 4),
+        Text(
+          'Selasa, 21 April 2026', // Teks dummy
+          style: Get.textTheme.bodyMedium,
         ),
-        Icon(Icons.notifications_outlined, color: AppColors.primary, size: 28),
       ],
     );
   }

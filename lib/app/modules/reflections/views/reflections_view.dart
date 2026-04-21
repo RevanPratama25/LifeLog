@@ -47,7 +47,7 @@ class ReflectionsView extends GetView<ReflectionsController> {
         ],
       ),
       actions: [
-        IconButton(icon: const Icon(Icons.search, color: Colors.white70), onPressed: () {}),
+        IconButton(icon: const Icon(Icons.notifications_none, color: Colors.white70), onPressed: () {}),
         const CircleAvatar(radius: 14, backgroundImage: NetworkImage('https://i.pravatar.cc/100')), // Dummy avatar kayak di gambar
         const SizedBox(width: 24),
       ],
