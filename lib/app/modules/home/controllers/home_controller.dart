@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeController extends GetxController {
   final userName = 'Revan'.obs; 
@@ -27,4 +28,8 @@ class HomeController extends GetxController {
 
   // Helper buat teks di tengah donut
   String get progressPercentage => "${(taskProgress * 100).toInt()}%";
+  void logout() async {
+    await FirebaseAuth.instance.signOut();
+    Get.offAllNamed('/login'); // Kembali ke halaman awal
+  }
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
+import 'package:life_log_frontend/app/modules/home/controllers/home_controller.dart';
 import 'package:life_log_frontend/app/routes/app_pages.dart';
-import '../controllers/home_controller.dart';
 import '../../../core/theme/app_colors.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -48,9 +49,32 @@ class HomeView extends GetView<HomeController> {
       ),
       actions: [
         IconButton(icon: const Icon(Icons.notifications_none, color: Colors.white70), onPressed: () {}),
-        const CircleAvatar(radius: 14, backgroundImage: NetworkImage('https://i.pravatar.cc/100')),
-        const SizedBox(width: 24),
-      ],
+        GestureDetector(
+    onTap: () {
+      Get.defaultDialog(
+        title: 'Keluar dari LifeLog?',
+        middleText: 'Sesi kamu akan berakhir. Sampai jumpa lagi, Revan!',
+        backgroundColor: AppColors.surface,
+        titleStyle: const TextStyle(color: Colors.white),
+        middleTextStyle: const TextStyle(color: Colors.white70),
+        textConfirm: 'Keluar',
+        confirmTextColor: Colors.white,
+        buttonColor: Colors.redAccent,
+        onConfirm: () async {
+          await FirebaseAuth.instance.signOut();
+          Get.offAllNamed(Routes.LOGIN); // Kembali ke gerbang awal
+        },
+        textCancel: 'Cancel',
+        cancelTextColor: Colors.white70,
+      );
+    },
+    child: const CircleAvatar(
+      radius: 14,
+      backgroundImage: NetworkImage('https://i.pravatar.cc/100'), // Nanti ganti dengan foto profil user
+    ),
+  ),
+  const SizedBox(width: 24),
+],
     );
   }
 

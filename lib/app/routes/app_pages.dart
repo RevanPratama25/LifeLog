@@ -1,6 +1,4 @@
 import 'package:get/get.dart';
-import 'package:life_log_frontend/app/modules/auth/bindings/auth_binding.dart';
-import 'package:life_log_frontend/app/modules/auth/views/register_view.dart';
 
 //Home
 import '../modules/home/bindings/home_binding.dart';
@@ -23,11 +21,13 @@ import '../modules/auth/views/register_view.dart';
 import '../modules/base/bindings/base_binding.dart';
 import '../modules/base/views/base_view.dart';
 
-// import '../modules/task/bindings/task_binding.dart';
-// import '../modules/task/views/task_view.dart';
+//Tasks
+import '../modules/tasks/bindings/tasks_binding.dart';
+import '../modules/tasks/views/tasks_view.dart';
 
-// import '../modules/log/bindings/log_binding.dart';
-// import '../modules/log/views/log_view.dart';
+//Root
+import '../modules/root/bindings/root_binding.dart';
+import '../modules/root/views/root_view.dart';
 
 part 'app_routes.dart';
 
@@ -35,9 +35,16 @@ class AppPages {
   AppPages._();
 
   // Halaman pertama yang muncul saat aplikasi dibuka
-  static const INITIAL = Routes.BASE;
+  static const INITIAL = Routes.ROOT;
 
   static final routes = [
+    GetPage(
+      name: _Paths.ROOT,
+      page: () => const RootView(),
+      binding: RootBinding(),
+      transition: Transition.fadeIn,
+    ),
+
     GetPage(
       name: _Paths.BASE,
       page: () => const BaseView(),
@@ -76,28 +83,10 @@ class AppPages {
       binding: AuthBinding(),
     ),
 
-    // CONTOH UNTUK MODUL LAINNYA NANTI:
-    /*
-    GetPage(
-      name: _Paths.LOGIN,
-      page: () => const LoginView(),
-      binding: AuthBinding(),
-    ),
-    GetPage(
-      name: _Paths.REGISTER,
-      page: () => const RegisterView(),
-      binding: AuthBinding(),
-    ),
     GetPage(
       name: _Paths.TASK,
       page: () => const TaskView(),
       binding: TaskBinding(),
     ),
-    GetPage(
-      name: _Paths.LOG,
-      page: () => const LogView(),
-      binding: LogBinding(),
-    ),
-    */
   ];
 }

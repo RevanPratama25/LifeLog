@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/task_controller.dart';
+import '../controllers/tasks_controller.dart';
 import '../../../core/theme/app_colors.dart';
 
 class TaskView extends GetView<TaskController> {

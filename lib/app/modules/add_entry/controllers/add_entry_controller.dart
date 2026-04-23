@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddEntryController extends GetxController {
-  // Toggle: true = Task (Rencana), false = Log (Aktivitas Spontan)
   final isTaskMode = true.obs; 
-  final isLoading = false.obs;  
+  final isLoading = false.obs; 
 
-  // Form Controllers
   final titleController = TextEditingController();
   final descController = TextEditingController();
   final categoryController = TextEditingController();
-  final noteController = TextEditingController(); // Khusus Log
+  final noteController = TextEditingController(); 
 
-  // Khusus Task (Deadline)
   final deadlineDate = Rx<DateTime?>(null);
+
+  // 🔥 Inisialisasi Firestore & Auth
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void onInit() {
     super.onInit();
-    // Cek apakah ada argumen yang dikirim
     if (Get.arguments != null && Get.arguments['isTask'] != null) {
       isTaskMode.value = Get.arguments['isTask'];
     }
@@ -28,7 +30,6 @@ class AddEntryController extends GetxController {
     isTaskMode.value = isTask;
   }
 
-  // Fungsi pura-pura buat UI Skeleton dulu
   void pickDate() async {
     DateTime? picked = await showDatePicker(
       context: Get.context!,
@@ -37,12 +38,11 @@ class AddEntryController extends GetxController {
       lastDate: DateTime(2030),
       builder: (context, child) {
         return Theme(
-          // Biar kalendernya ngikutin tema Dark Mode lu
           data: ThemeData.dark().copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF00B4D8), // AppColors.primary
+              primary: Color(0xFF00B4D8),
               onPrimary: Colors.white,
-              surface: Color(0xFF1E1E1E), // AppColors.surface
+              surface: Color(0xFF1E1E1E),
             ),
           ),
           child: child!,
@@ -54,57 +54,82 @@ class AddEntryController extends GetxController {
     }
   }
 
+  // Fungsi simpan ke Cloud Firestore
   Future<void> saveEntry() async {
-    // 1. Logic Validation & Trimming
     final title = titleController.text.trim();
+    final desc = descController.text.trim();
+    final category = categoryController.text.trim().toUpperCase();
+    final note = noteController.text.trim();
     
     if (title.isEmpty) {
-      _showErrorSnackbar('You forgot the title buddy!');
-      return; // Berhenti di sini, gak lanjut simpan
+      _showErrorSnackbar('Judulnya jangan dikosongin ya!');
+      return; 
     }
 
     if (isTaskMode.value && deadlineDate.value == null) {
-      _showErrorSnackbar('You need to fill the deadline buddy!');
+      _showErrorSnackbar('Tenggat waktunya (deadline) wajib dipilih!');
       return;
     }
 
-    // 2. Logic Loading State (Mencegah double tap)
     if (isLoading.value) return; 
     isLoading.value = true;
 
     try {
-      // ⏳ Simulasi delay network/Firebase selama 2 detik
-      await Future.delayed(const Duration(seconds: 2));
+      // 1. Ambil UID User yang lagi login
+      final String uid = _auth.currentUser!.uid;
 
-      // Nanti kode insert ke Firebase taruh di sini
-      // title, categoryController.text.trim(), dst...
+      // 2. Siapkan Data (Bentuk Map/JSON)
+      Map<String, dynamic> entryData = {
+        'title': title,
+        'description': desc,
+        'category': category.isEmpty ? (isTaskMode.value ? 'TASK' : 'LOG') : category,
+        'note': note,
+        'isTask': isTaskMode.value,
+        'createdAt': FieldValue.serverTimestamp(), // Waktu asli server Firebase
+      };
+
+      // 3. Tambahan data khusus Task
+      if (isTaskMode.value) {
+        entryData['deadline'] = Timestamp.fromDate(deadlineDate.value!);
+        entryData['isDone'] = false; // Status default task
+        entryData['isHighPriority'] = false; // Nanti bisa dibikin switch di UI
+      } else {
+        // Data khusus Log/Reflection
+        entryData['tagType'] = 'MOOD: NEUTRAL'; // Default sementara
+        entryData['tagIcon'] = 'person';
+      }
+
+      // 4. Tembak ke Firestore (Disimpan di bawah folder UID masing-masing user)
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('entries')
+          .add(entryData);
 
       Get.snackbar(
         'Mantap!',
-        isTaskMode.value ? 'Task saved successfully.' : 'Log saved successfully.',
+        isTaskMode.value ? 'Rencana berhasil disimpan.' : 'Aktivitas berhasil dicatat.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.withValues(alpha: 0.8),
+        backgroundColor: Colors.green.withOpacity(0.8),
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
       );
       
-      Get.back(); // Kembali ke Home setelah sukses
+      Get.back(); // Kembali ke Dashboard/Previous Page
       
     } catch (e) {
-      _showErrorSnackbar('Failed to save data: $e');
+      _showErrorSnackbar('Gagal menyimpan data: $e');
     } finally {
-      // Pastikan loading dimatikan apapun yang terjadi (sukses/gagal)
       isLoading.value = false;
     }
   }
 
-  // Helper fungsi biar kode bersih
   void _showErrorSnackbar(String message) {
     Get.snackbar(
       'Oops!',
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
+      backgroundColor: Colors.redAccent.withOpacity(0.8),
       colorText: Colors.white,
       margin: const EdgeInsets.all(16),
     );

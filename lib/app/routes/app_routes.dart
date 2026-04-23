@@ -5,6 +5,7 @@ abstract class Routes {
   Routes._();
   
   // Ini yang akan dipanggil di UI, contoh: Get.toNamed(Routes.HOME);
+  static const ROOT = _Paths.ROOT;
   static const BASE = _Paths.BASE;
   static const HOME = _Paths.HOME;
   static const LOGIN = _Paths.LOGIN;
@@ -20,6 +21,7 @@ abstract class _Paths {
   _Paths._();
   
   // Ini definisi path URL-nya (berguna kalau app lu di-build ke Web)
+  static const ROOT = '/root';
   static const BASE = '/base';
   static const HOME = '/home';
   static const LOGIN = '/login';

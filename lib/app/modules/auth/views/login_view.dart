@@ -17,79 +17,162 @@ class LoginView extends GetView<AuthController> {
             children: [
               const SizedBox(height: 60),
               // Header
-              Text('Welcome Back.', style: Get.textTheme.displayLarge?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                'Welcome Back.',
+                style: Get.textTheme.displayLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 8),
-              Text('Log in untuk melanjutkan perjalanan produktifmu.', 
-                  style: Get.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary)),
-              
+              Text(
+                'Log in to continue your productive journey.',
+                style: Get.textTheme.bodyLarge?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+
               const SizedBox(height: 60),
-              
+
               // Form Email
               _buildTextField(
                 controller: controller.emailController,
                 label: 'Email',
-                hint: 'contoh@email.com',
+                hint: 'YourEmail',
                 icon: Icons.email_outlined,
               ),
               const SizedBox(height: 24),
-              
+
               // Form Password
-              Obx(() => _buildTextField(
-                controller: controller.passwordController,
-                label: 'Password',
-                hint: 'Masukkan password',
-                icon: Icons.lock_outline,
-                isPassword: true,
-                isObscure: controller.isPasswordHidden.value,
-                onTogglePassword: controller.togglePasswordVisibility,
-              )),
-              
+              Obx(
+                () => _buildTextField(
+                  controller: controller.passwordController,
+                  label: 'Password',
+                  hint: 'Password',
+                  icon: Icons.lock_outline,
+                  isPassword: true,
+                  isObscure: controller.isPasswordHidden.value,
+                  onTogglePassword: controller.togglePasswordVisibility,
+                ),
+              ),
+
               // Forgot Password Link
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {}, // Nanti untuk fitur reset password
-                  child: const Text('Lupa Password?', style: TextStyle(color: AppColors.primary)),
+                  onPressed: () {
+                    Get.defaultDialog(
+                      title: 'Reset Password',
+                      backgroundColor: AppColors.surface,
+                      titleStyle: const TextStyle(color: Colors.white),
+                      contentPadding: const EdgeInsets.all(16),
+                      content: Column(
+                        children: [
+                          const Text(
+                            'Insert registered email to receive reset link.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: controller
+                                .emailController, // Use existing email controller
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: 'YourEmail',
+                              hintStyle: const TextStyle(color: Colors.white38),
+                              filled: true,
+                              fillColor: Colors.black26,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      textConfirm: 'Send Link',
+                      confirmTextColor: Colors.white,
+                      onConfirm: () => controller.resetPassword(
+                        controller.emailController.text,
+                      ),
+                      textCancel: 'Cancel',
+                      cancelTextColor: AppColors.primary,
+                      buttonColor: AppColors.primary,
+                    );
+                  },
+                  child: const Text(
+                    'Forgot Password?',
+                    style: TextStyle(color: AppColors.primary),
+                  ),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Login Button dengan Glow
               SizedBox(
                 width: double.infinity,
                 height: 55,
-                child: Obx(() => ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    shadowColor: AppColors.primary.withOpacity(0.5),
-                    elevation: 8, // Efek Glow
+                child: Obx(
+                  () => ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      shadowColor: AppColors.primary.withOpacity(0.5),
+                      elevation: 8, // Efek Glow
+                    ),
+                    onPressed: controller.isLoading.value
+                        ? null
+                        : controller.login,
+                    child: controller.isLoading.value
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Login',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
-                  onPressed: controller.isLoading.value ? null : controller.login,
-                  child: controller.isLoading.value
-                      ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Masuk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                )),
+                ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Register Link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Belum punya akun? ', style: Get.textTheme.bodyMedium),
+                  Text(
+                    "Don't have an account? ",
+                    style: Get.textTheme.bodyMedium,
+                  ),
                   GestureDetector(
-                    onTap: () => Get.toNamed('/register'), // Ganti dengan Routes.REGISTER
+                    onTap: () => Get.toNamed(
+                      '/register',
+                    ), // Ganti dengan Routes.REGISTER
                     child: const Text(
-                      'Daftar di sini',
-                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                      'Register here',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
@@ -110,7 +193,12 @@ class LoginView extends GetView<AuthController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Get.textTheme.labelLarge?.copyWith(color: AppColors.textSecondary)),
+        Text(
+          label,
+          style: Get.textTheme.labelLarge?.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -122,20 +210,29 @@ class LoginView extends GetView<AuthController> {
             prefixIcon: Icon(icon, color: AppColors.primary),
             suffixIcon: isPassword
                 ? IconButton(
-                    icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
+                    icon: Icon(
+                      isObscure ? Icons.visibility_off : Icons.visibility,
+                      color: AppColors.textSecondary,
+                    ),
                     onPressed: onTogglePassword,
                   )
                 : null,
             filled: true,
             fillColor: AppColors.surface,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
           ),
         ),
