@@ -88,7 +88,8 @@ class AddEntryController extends GetxController {
         'category': category.isEmpty ? (isTaskMode.value ? 'TASK' : 'LOG') : category,
         'note': note,
         'isTask': isTaskMode.value,
-        'createdAt': FieldValue.serverTimestamp(), // Waktu asli server Firebase
+        'isDone': !isTaskMode.value, // Kalau ini Log manual, otomatis 'isDone: true'
+        'createdAt': FieldValue.serverTimestamp(),
       };
 
       // 3. Tambahan data khusus Task

@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
-
-import '../controllers/tasks_controller.dart';
+import 'package:life_log_frontend/app/modules/tasks/controllers/tasks_controller.dart';
 
 class TaskBinding extends Bindings {
   @override

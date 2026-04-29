@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/timeline_controller.dart';
 import '../../../core/theme/app_colors.dart';
+
 
 class TimelineView extends GetView<TimelineController> {
   const TimelineView({super.key});
@@ -9,109 +11,124 @@ class TimelineView extends GetView<TimelineController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildCustomAppBar(), // 🔥 1. Pakai Custom AppBar
+      appBar: _buildCustomAppBar(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🔥 2. Pindahkan Judul ke sini
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Text('Riwayat Aktivitas', style: Get.textTheme.displayMedium?.copyWith(fontWeight: FontWeight.bold)),
+            child: Text('Timeline History', style: Get.textTheme.displayMedium?.copyWith(fontWeight: FontWeight.bold)),
           ),
           
           Expanded(
-            child: Obx(() {
-              if (controller.historyLogs.isEmpty) {
-                return const Center(child: Text('Belum ada aktivitas tercatat.'));
-              }
+            child: StreamBuilder<QuerySnapshot>(
+              stream: controller.entriesStream,
+              builder: (context, snapshot) {
+                // 1. Handling Loading
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                }
 
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                itemCount: controller.historyLogs.length,
-                itemBuilder: (context, index) {
-                  final log = controller.historyLogs[index];
-                  final isLast = index == controller.historyLogs.length - 1;
+                // 2. Handling Error
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error has occured: ${snapshot.error}'));
+                }
 
-                  return IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildTimelineNode(isLast),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 24.0),
-                            child: _buildLogCard(log),
-                          ),
+                // 3. Handling Empty Data
+                final docs = snapshot.data?.docs ?? [];
+                if (docs.isEmpty) {
+                  return const Center(child: Text('No activity recorded yet.', style: TextStyle(color: Colors.white54)));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final Map<String, dynamic> data = docs[index].data() as Map<String, dynamic>;
+                    final String docId = docs[index].id; // Ambil ID dokumen Firestore
+                    final bool isLast = index == docs.length - 1;
+
+                    // Bungkus dengan Dismissible untuk fitur Swipe to Delete
+                    return Dismissible(
+                      key: Key(docId),
+                      direction: DismissDirection.endToStart, // Geser dari kanan ke kiri
+                      background: Container(
+                        margin: const EdgeInsets.only(bottom: 24),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            }),
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 20),
+                        child: const Icon(Icons.delete_sweep, color: Colors.white, size: 30),
+                      ),
+                      onDismissed: (direction) {
+                        controller.deleteEntry(docId); // Panggil fungsi delete
+                      },
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildTimelineNode(isLast),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 24.0),
+                                child: _buildLogCard(data, docId), // Lempar docId ke sini
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
-          const SizedBox(height: 80), // Biar gak ketutup navbar bawah
+          const SizedBox(height: 80),
         ],
       ),
     );
   }
 
-  // 🔥 3. Fungsi Custom AppBar
+  // --- Sub Widgets ---
+
   AppBar _buildCustomAppBar() {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
       title: Row(
         children: [
-          Icon(Icons.bubble_chart, color: AppColors.primary, size: 28),
+          const Icon(Icons.bubble_chart, color: AppColors.primary, size: 28),
           const SizedBox(width: 8),
           Text('LIFELOG', style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
         ],
       ),
-      actions: [
-        IconButton(icon: const Icon(Icons.notifications_none, color: Colors.white70), onPressed: () {}),
-        const CircleAvatar(radius: 14, backgroundImage: NetworkImage('https://i.pravatar.cc/100')),
-        const SizedBox(width: 24),
-      ],
     );
   }
-  // Komponen pembentuk garis dan titik bercahaya
+
   Widget _buildTimelineNode(bool isLast) {
     return Column(
       children: [
-        // Glowing Dot
         Container(
-          width: 16,
-          height: 16,
+          width: 12, height: 12,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.primary,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.6),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
+            boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.5), blurRadius: 8)],
           ),
-          margin: const EdgeInsets.only(top: 4), // Sejajarkan dengan judul card
+          margin: const EdgeInsets.only(top: 4),
         ),
-        // Garis vertikal (hilangkan jika ini item terakhir)
         if (!isLast)
           Expanded(
             child: Container(
               width: 2,
               margin: const EdgeInsets.only(top: 8),
               decoration: BoxDecoration(
-                // Efek gradasi pada garis agar lebih estetik
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.primary.withOpacity(0.5),
-                    AppColors.primary.withOpacity(0.1),
-                  ],
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [AppColors.primary.withValues(alpha: 0.5), AppColors.primary.withValues(alpha: 0.0)],
                 ),
               ),
             ),
@@ -120,70 +137,86 @@ class TimelineView extends GetView<TimelineController> {
     );
   }
 
-  // Komponen pembentuk Card Log
-  Widget _buildLogCard(Map<String, String> log) {
-    final hasNote = log['note'] != null && log['note']!.isNotEmpty;
+  Widget _buildLogCard(Map<String, dynamic> data, String docId) {
+    // 1. Ekstrak Data
+    final String title = data['title']?.toString() ?? 'No Title';
+    final String category = data['category']?.toString() ?? 'UNCATEGORIZED';
+    final String note = data['note']?.toString() ?? '';
+    final String dateStr = controller.formatTimestamp(data['createdAt'] as Timestamp?);
+    
+    // 2. Cek Jenis Data
+    final bool isTask = data['isTask'] == true;
+    final bool isDone = data['isDone'] == true;
+
+    // 3. Tentukan Gaya Visual
+    // Kalau ini Task dan BELUM selesai, tampilannya beda.
+    final bool isPendingTask = isTask && !isDone; 
+
+    // Kita pakai warna yang lebih redup untuk Task yang belum selesai
+    final Color cardColor = isPendingTask ? Colors.transparent : AppColors.surface;
+    final Color borderColor = isPendingTask ? AppColors.primary.withOpacity(0.3) : AppColors.primary.withOpacity(0.1);
+    
+    // Ikon penanda status
+    final IconData statusIcon = isPendingTask ? Icons.hourglass_empty_rounded : Icons.check_circle_rounded;
+    final Color statusColor = isPendingTask ? Colors.orangeAccent : AppColors.primary;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+        border: Border.all(color: borderColor),
+        // Tambahkan efek dashed border nanti kalau perlu, tapi untuk sekarang border solid yang tipis udah cukup membedakan.
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Card: Kategori & Tanggal
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                log['category']!.toUpperCase(),
-                style: Get.textTheme.labelLarge?.copyWith(
-                  fontSize: 10,
-                  letterSpacing: 1.2,
-                  color: AppColors.primary,
-                ),
+              Row(
+                children: [
+                  Icon(statusIcon, size: 14, color: statusColor),
+                  const SizedBox(width: 8),
+                  Text(category, style: const TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                ],
               ),
-              Text(
-                log['date']!,
-                style: Get.textTheme.bodyMedium?.copyWith(fontSize: 12),
-              ),
+              Text(dateStr, style: const TextStyle(fontSize: 11, color: Colors.white38)),
             ],
           ),
           const SizedBox(height: 8),
           
-          // Judul Aktivitas
-          Text(log['title']!, style: Get.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+          Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isPendingTask ? Colors.white70 : Colors.white)),
           
-          // Insight/Note (Hanya muncul jika ada)
-          if (hasNote) ...[
+          if (note.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-                border: const Border(left: BorderSide(color: AppColors.primary, width: 3)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.format_quote_rounded, color: AppColors.primary, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      log['note']!,
-                      style: Get.textTheme.bodyMedium?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+              child: Text(note, style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.white70)),
             )
+          ],
+
+          // Fitur Tambahan: Tombol "Selesaikan" untuk Pending Task
+          if (isPendingTask) ...[
+             const SizedBox(height: 12),
+             Align(
+               alignment: Alignment.centerRight,
+               child: TextButton.icon(
+                 onPressed: () {
+                   // Panggil fungsi completeTask pakai docId
+                   controller.completeTask(docId);
+                 },
+                 icon: const Icon(Icons.check, size: 16, color: Colors.white),
+                 label: const Text('Selesaikan', style: TextStyle(color: Colors.white, fontSize: 12)),
+                 style: TextButton.styleFrom(
+                   backgroundColor: AppColors.primary.withOpacity(0.2),
+                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                   minimumSize: Size.zero,
+                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                 ),
+               )
+             )
           ]
         ],
       ),
