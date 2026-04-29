@@ -1,9 +1,41 @@
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart'; // Jangan lupa import ini
+import 'package:intl/date_symbol_data_local.dart'; // Dan ini
 
 class HomeController extends GetxController {
-  final userName = 'Revan'.obs; 
-  final streakDays = 5.obs; // Contoh: 5 hari aktif
+  // 1. Siapkan variabel kosong dulu
+  final userName = ''.obs; 
+  final streakDays = 5.obs; //5 hari  aktif
+  final currentDate = ''.obs; // Pindahin deklarasi variabel ke atas biar rapi
+
+  // 2. Tambahkan instance FirebaseAuth
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  @override
+  void onInit() {
+    super.onInit();
+    // 3. Ambil nama user pas controller pertama kali dibuat
+    _loadUserData();
+    _formatCurrentDate();
+  }
+
+  void _loadUserData() {
+    // Ambil displayName yang sudah kamu simpan pas Register tadi
+    // Kalau namanya kosong, kasih cadangan tulisan "User"
+    userName.value = _auth.currentUser?.displayName ?? "User";
+  }
+
+  void _formatCurrentDate() {
+    initializeDateFormatting('id_ID', null);
+    DateTime now = DateTime.now();
+    var formatter = DateFormat('EEEE, d MMMM yyyy', 'id_ID');
+    currentDate.value = formatter.format(now);
+  }
+
+  // ... (sisa kodingan todayTasks dan recentLogs tetap sama)
+
+  
 
   // List Task hari ini
   final todayTasks = [

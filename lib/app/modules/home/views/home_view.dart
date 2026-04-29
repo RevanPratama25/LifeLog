@@ -53,7 +53,7 @@ class HomeView extends GetView<HomeController> {
     onTap: () {
       Get.defaultDialog(
         title: 'Keluar dari LifeLog?',
-        middleText: 'Sesi kamu akan berakhir. Sampai jumpa lagi, Revan!',
+        middleText: 'Sesi kamu akan berakhir. Sampai jumpa lagi, ${controller.userName.value}!',
         backgroundColor: AppColors.surface,
         titleStyle: const TextStyle(color: Colors.white),
         middleTextStyle: const TextStyle(color: Colors.white70),
@@ -88,10 +88,10 @@ class HomeView extends GetView<HomeController> {
               style: Get.textTheme.displayMedium,
             )),
         const SizedBox(height: 4),
-        Text(
-          'Selasa, 21 April 2026', // Teks dummy
-          style: Get.textTheme.bodyMedium,
-        ),
+        Obx(() => Text(
+            controller.currentDate.value,
+            style: Get.textTheme.bodyMedium,
+          )),
       ],
     );
   }
