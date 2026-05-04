@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,15 +10,15 @@ class TaskController extends GetxController {
   // State untuk filter kategori
   final selectedCategory = 'ALL'.obs;
 
-  // Daftar kategori yang tersedia (sesuaikan dengan yang sering lu pakai)
-  final categories = ['ALL', 'FINAL PROJECT', 'STUDY', 'WORK', 'PERSONAL'].obs;
-
   void setCategory(String category) {
     selectedCategory.value = category;
   }
 
   // State untuk sorting
   final isDescending = true.obs;
+
+  // State untuk menyimpan catatan saat menyelesaikan Task
+  final completionNoteController = TextEditingController();
 
   // 1. Stream untuk Task yang Aktif (Belum Selesai)
   Stream<QuerySnapshot> get activeTasksStream => _firestore
@@ -46,14 +47,56 @@ class TaskController extends GetxController {
   // Fungsi untuk menandai task selesai (Update Firestore)
   Future<void> markAsDone(String docId) async {
     try {
+      final note = completionNoteController.text.trim();
+      
+      // Siapkan data yang mau di-update
+      Map<String, dynamic> updateData = {'isDone': true};
+      
+      // Kalau user ngisi insight-nya, kita masukin ke database. 
+      // Kalau dikosongin, kita cuma update status isDone-nya aja.
+      if (note.isNotEmpty) {
+        updateData['note'] = note;
+      }
+
       await _firestore
           .collection('users')
           .doc(_auth.currentUser!.uid)
           .collection('entries')
           .doc(docId)
-          .update({'isDone': true});
+          .update(updateData);
+          
+      // Bersihin form dan tutup bottom sheet
+      completionNoteController.clear();
+      Get.back(); // Untuk nutup Bottom Sheet
+      
+      Get.snackbar('Mantap!', 'Task diselesaikan dan masuk ke Log.',
+          backgroundColor: Colors.green.withOpacity(0.8), colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Error', 'Gagal menyelesaikan task');
+      Get.snackbar('Error', 'Gagal menyelesaikan task: $e');
     }
   }
+
+  @override
+  void onClose() {
+    completionNoteController.dispose();
+    super.onClose();
+  }
+
+  //  Fungsi Delete 
+  Future<void> deleteTask(String docId) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('entries')
+          .doc(docId)
+          .delete();
+      Get.back(); // Tutup Bottom Sheet kalau lagi kebuka
+      Get.snackbar('Terhapus', 'Rencana berhasil dihapus.',
+          backgroundColor: Colors.redAccent.withOpacity(0.8), colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal menghapus: $e');
+    }
+  }
+  
 }

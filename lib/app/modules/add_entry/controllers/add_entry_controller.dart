@@ -5,16 +5,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart'; // Untuk HapticFeedback
 
 class AddEntryController extends GetxController {
-  final isTaskMode = true.obs; 
-  final isLoading = false.obs; 
+  final isTaskMode = true.obs;
+  final isLoading = false.obs;
+
+  final isEditMode = false.obs;
+  String? editDocId;
 
   final titleController = TextEditingController();
   final descController = TextEditingController();
   final categoryController = TextEditingController();
-  final noteController = TextEditingController(); 
+  final noteController = TextEditingController();
 
   final deadlineDate = Rx<DateTime?>(null);
-                                
+
   // Inisialisasi Firestore & Auth
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -22,8 +25,37 @@ class AddEntryController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    if (Get.arguments != null && Get.arguments['isTask'] != null) {
-      isTaskMode.value = Get.arguments['isTask'];
+
+    // Cek apakah ada data yang dilempar dari halaman sebelumnya
+    if (Get.arguments != null) {
+      // Cek argumen default (pas mau bikin baru dari Home)
+      if (Get.arguments['isTask'] != null) {
+        isTaskMode.value = Get.arguments['isTask'];
+      }
+
+      // 🔥 Cek argumen Edit Mode
+      if (Get.arguments['isEdit'] == true) {
+        isEditMode.value = true;
+        editDocId = Get.arguments['docId'];
+
+        // Ekstrak data yang mau diedit
+        final data = Get.arguments['data'] as Map<String, dynamic>;
+
+        // Isi otomatis TextController dengan data lama
+        titleController.text = data['title']?.toString() ?? '';
+        descController.text = data['description']?.toString() ?? '';
+        categoryController.text = data['category']?.toString() ?? '';
+        noteController.text = data['note']?.toString() ?? '';
+        // If the data is completed (isDone: true), force it open as Log (false).
+        // If not completed yet, follow the original status.
+        isTaskMode.value = data['isDone'] == true
+            ? false
+            : (data['isTask'] == true);
+
+        if (data['deadline'] != null) {
+          deadlineDate.value = (data['deadline'] as Timestamp).toDate();
+        }
+      }
     }
   }
 
@@ -63,77 +95,83 @@ class AddEntryController extends GetxController {
     final desc = descController.text.trim();
     final category = categoryController.text.trim().toUpperCase();
     final note = noteController.text.trim();
-    
-    if (title.isEmpty) {
-      _showErrorSnackbar('Judulnya jangan dikosongin ya!');
-      return; 
-    }
 
-    if (isTaskMode.value && deadlineDate.value == null) {
-      _showErrorSnackbar('Tenggat waktunya (deadline) wajib dipilih!');
+    if (title.isEmpty) {
+      _showErrorSnackbar('Title cannot be empty!');
       return;
     }
 
-    if (isLoading.value) return; 
+    if (isTaskMode.value && deadlineDate.value == null) {
+      _showErrorSnackbar('Deadline must be chosen!');
+      return;
+    }
+
+    if (isLoading.value) return;
     isLoading.value = true;
 
     try {
-      // 1. Ambil UID User yang lagi login
       final String uid = _auth.currentUser!.uid;
 
-      // 2. Siapkan Data (Bentuk Map/JSON)
       Map<String, dynamic> entryData = {
         'title': title,
         'description': desc,
-        'category': category.isEmpty ? (isTaskMode.value ? 'TASK' : 'LOG') : category,
+        'category': category.isEmpty
+            ? (isTaskMode.value ? 'TASK' : 'LOG')
+            : category,
         'note': note,
         'isTask': isTaskMode.value,
-        'isDone': !isTaskMode.value, // Kalau ini Log manual, otomatis 'isDone: true'
-        'createdAt': FieldValue.serverTimestamp(),
+        // Jangan timpa createdAt dan isDone kalau lagi ngedit
+
+        // Kalo toggle-nya diubah jadi Log, otomatis jadi selesai (true).
+        // Kalo toggle-nya dibalikin jadi Task, otomatis jadi aktif lagi (false).
+        'isDone': !isTaskMode.value,
       };
 
-      // 3. Tambahan data khusus Task
       if (isTaskMode.value) {
         entryData['deadline'] = Timestamp.fromDate(deadlineDate.value!);
-        entryData['isDone'] = false; // Status default task
-        entryData['isHighPriority'] = false; // Nanti bisa dibikin switch di UI
-      } else {
-        // Data khusus Log/Reflection
-        entryData['tagType'] = 'MOOD: NEUTRAL'; // Default sementara
-        entryData['tagIcon'] = 'person';
       }
 
-      // Tembak ke Firestore (Disimpan di bawah folder UID masing-masing user)
-      await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('entries')
-          .add(entryData);
+      // 🔥 LOGIC BERCABANG: Update vs Create
+      if (isEditMode.value && editDocId != null) {
+        // Update data yang udah ada
+        await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('entries')
+            .doc(editDocId)
+            .update(entryData);
+      } else {
+        // Create data baru (logic yang lama)
+        entryData['createdAt'] = FieldValue.serverTimestamp();
+        await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('entries')
+            .add(entryData);
+      }
 
       HapticFeedback.lightImpact();
-      
 
-      // Clear controller
+      // Bersihin form
       titleController.clear();
       descController.clear();
       categoryController.clear();
       noteController.clear();
       deadlineDate.value = null;
 
-      // Balik ke page sebelumnya
-      Get.back(); 
+      Get.back();
 
-      // Tampilkan snackbar
       Get.snackbar(
-        'Success!',
-        isTaskMode.value ? 'Task has been saved successfully.' : 'Activity has been logged successfully.',
+        'Ok!',
+        isEditMode.value
+            ? 'Edited Successfully.'
+            : (isTaskMode.value
+                  ? 'Task Saved Successfully.'
+                  : 'Log Saved Successfully.'),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green.withOpacity(0.8),
         colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
       );
-      
     } catch (e) {
       _showErrorSnackbar('Failed to save data: $e');
     } finally {

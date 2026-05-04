@@ -29,9 +29,11 @@ class AddEntryView extends GetView<AddEntryController> {
           elevation: 0,
           title: Obx(
             () => Text(
-              controller.isTaskMode.value
-                  ? 'Tambah Rencana'
-                  : 'Catat Aktivitas',
+              controller.isEditMode.value
+                  ? 'Edit Data'
+                  : (controller.isTaskMode.value
+                        ? 'Tambah Rencana'
+                        : 'Catat Aktivitas'),
               style: Get.textTheme.titleLarge,
             ),
           ),
@@ -91,8 +93,8 @@ class AddEntryView extends GetView<AddEntryController> {
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text(
-                            'Save',
+                        : Text(
+                            controller.isEditMode.value ? 'Update' : 'Save',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -249,8 +251,6 @@ class AddEntryView extends GetView<AddEntryController> {
     );
   }
 
-  
-
   // Helper untuk Input Text Field biar seragam
   Widget _buildInput({
     required String label,
@@ -306,16 +306,20 @@ class AddEntryView extends GetView<AddEntryController> {
   void _showExitConfirmation() {
     Get.defaultDialog(
       title: 'Are you sure?',
-      middleText: 'The data you have typed will be lost. Are you sure you want to quit?',
+      middleText:
+          'The data you have typed will be lost. Are you sure you want to quit?',
       backgroundColor: AppColors.surface,
-      titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      titleStyle: const TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+      ),
       middleTextStyle: const TextStyle(color: Colors.white70),
       contentPadding: const EdgeInsets.all(20),
-      
+
       // Tombol Batal Keluar
       textCancel: 'Keep Typing',
       cancelTextColor: AppColors.primary,
-      
+
       // Tombol Ya, Keluar
       textConfirm: 'Yes, Quit',
       confirmTextColor: Colors.white,
