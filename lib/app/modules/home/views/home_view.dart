@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
-import 'package:life_log_frontend/app/modules/home/controllers/home_controller.dart';
-import 'package:life_log_frontend/app/routes/app_pages.dart';
+import '../controllers/home_controller.dart';
+import '../../../routes/app_pages.dart';
 import '../../../core/theme/app_colors.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -27,7 +27,7 @@ class HomeView extends GetView<HomeController> {
               _buildTodayFocus(),
               const SizedBox(height: 32),
               _buildRecentReflections(),
-              const SizedBox(height: 80), // Biar gak ketutup Floating Navbar
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -35,7 +35,7 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  //Fungsi Custom AppBar
+  // Custom AppBar
   AppBar _buildCustomAppBar() {
     return AppBar(
       backgroundColor: Colors.transparent,
@@ -70,7 +70,7 @@ class HomeView extends GetView<HomeController> {
     },
     child: const CircleAvatar(
       radius: 14,
-      backgroundImage: NetworkImage('https://i.pravatar.cc/100'), // Nanti ganti dengan foto profil user
+      backgroundImage: NetworkImage('https://i.pravatar.cc/100'), // Replace with actual user profile photo
     ),
   ),
   const SizedBox(width: 24),
@@ -89,14 +89,14 @@ class HomeView extends GetView<HomeController> {
             )),
         const SizedBox(height: 4),
         Text(
-          'Selasa, 21 April 2026', // Teks dummy
+          'Tuesday, 21 April 2026',
           style: Get.textTheme.bodyMedium,
         ),
       ],
     );
   }
 
-  // 2. HERO WIDGET (STREAK) DENGAN GLOW EFFECT
+  // Hero widget (streak) with glow effect
   Widget _buildStreakCard() {
     return Container(
       width: double.infinity,
@@ -115,7 +115,7 @@ class HomeView extends GetView<HomeController> {
       ),
       child: Column(
         children: [
-          // Bagian 1: Donut Graphic (Task Progress)
+          // Section 1: Donut graphic (task progress)
           Stack(
             alignment: Alignment.center,
             children: [
@@ -125,7 +125,7 @@ class HomeView extends GetView<HomeController> {
                 child: Obx(() => CircularProgressIndicator(
                       value: controller.taskProgress,
                       strokeWidth: 10,
-                      strokeCap: StrokeCap.round, // Bikin ujung garis membulat (lebih modern)
+                      strokeCap: StrokeCap.round,
                       backgroundColor: AppColors.background,
                       color: AppColors.primary,
                     )),
@@ -139,7 +139,7 @@ class HomeView extends GetView<HomeController> {
                           fontWeight: FontWeight.bold,
                         ),
                       )),
-                  Text('Selesai', style: Get.textTheme.bodyMedium),
+                  Text('Completed', style: Get.textTheme.bodyMedium),
                 ],
               )
             ],
@@ -149,7 +149,7 @@ class HomeView extends GetView<HomeController> {
           const Divider(color: Colors.white10),
           const SizedBox(height: 16),
 
-          // Bagian 2: Horizontal Fire Streak
+          // Section 2: Horizontal fire streak
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -163,7 +163,7 @@ class HomeView extends GetView<HomeController> {
               ),
               const SizedBox(height: 12),
               
-              // Barisan Api Horizontal
+              // Fire icon row
               Obx(() => Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -189,7 +189,7 @@ class HomeView extends GetView<HomeController> {
     );
   }
     
-  // 3. QUICK ACTIONS
+  // Quick action buttons
   Widget _buildQuickActions() {
     return Row(
       children: [
@@ -205,10 +205,10 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _actionButton(String title, IconData icon, {required bool isPrimary}) {
-  return InkWell(
-    onTap: () {
-      // Kirim argumen berupa Map untuk menentukan mode
-      Get.toNamed(
+    return InkWell(
+      onTap: () {
+        // Pass arguments to determine the mode (Task vs Log)
+        Get.toNamed(
         Routes.ADD_ENTRY, 
         arguments: {'isTask': isPrimary},
       );
@@ -238,7 +238,7 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  // 4. TODAY'S FOCUS
+  // Today's focus section
   Widget _buildTodayFocus() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,7 +262,7 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  // 5. RECENT REFLECTIONS
+  // Recent reflections section
   Widget _buildRecentReflections() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

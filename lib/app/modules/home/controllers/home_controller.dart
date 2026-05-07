@@ -1,35 +1,38 @@
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../routes/app_pages.dart';
 
 class HomeController extends GetxController {
-  final userName = 'Revan'.obs; 
-  final streakDays = 5.obs; // Contoh: 5 hari aktif
+  final userName = 'Revan'.obs;
+  final streakDays = 5.obs;
 
-  // List Task hari ini
+  // Today's task list (placeholder data)
   final todayTasks = [
-    {'title': 'Praktikum Jaringan', 'isDone': true},
-    {'title': 'Review Materi GetX', 'isDone': true},
-    {'title': 'Integrasi Firebase', 'isDone': false},
+    {'title': 'Networking Lab', 'isDone': true},
+    {'title': 'Review GetX Material', 'isDone': true},
+    {'title': 'Firebase Integration', 'isDone': false},
     {'title': 'Update UI Dashboard', 'isDone': false},
   ].obs;
 
-  // List Refleksi terbaru
+  // Recent reflections (placeholder data)
   final recentLogs = [
-    {'title': 'Lebih Fokus Hari Ini', 'note': 'Bisa selesaikan task lebih awal tanpa distraksi.'},
-    {'title': 'Perlu Istirahat', 'note': 'Terasa capek di siang hari karena kurang tidur semalam.'},
+    {'title': 'More Focused Today', 'note': 'Finished tasks earlier without distractions.'},
+    {'title': 'Need More Rest', 'note': 'Felt tired in the afternoon due to lack of sleep last night.'},
   ].obs;
 
-  // Logic hitung persentase task yang beres
+  // Calculate task completion percentage
   double get taskProgress {
     if (todayTasks.isEmpty) return 0.0;
     int cleared = todayTasks.where((task) => task['isDone'] == true).length;
     return cleared / todayTasks.length;
   }
 
-  // Helper buat teks di tengah donut
+  // Formatted percentage text for the donut chart
   String get progressPercentage => "${(taskProgress * 100).toInt()}%";
+
+  /// Signs out and navigates back to login.
   void logout() async {
     await FirebaseAuth.instance.signOut();
-    Get.offAllNamed('/login'); // Kembali ke halaman awal
+    Get.offAllNamed(Routes.LOGIN);
   }
 }

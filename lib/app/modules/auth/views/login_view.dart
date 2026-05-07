@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/custom_text_field.dart';
+import '../../../routes/app_pages.dart';
 
 class LoginView extends GetView<AuthController> {
   const LoginView({super.key});
@@ -33,8 +35,8 @@ class LoginView extends GetView<AuthController> {
 
               const SizedBox(height: 60),
 
-              // Form Email
-              _buildTextField(
+              // Email field
+              CustomTextField(
                 controller: controller.emailController,
                 label: 'Email',
                 hint: 'YourEmail',
@@ -42,9 +44,9 @@ class LoginView extends GetView<AuthController> {
               ),
               const SizedBox(height: 24),
 
-              // Form Password
+              // Password field
               Obx(
-                () => _buildTextField(
+                () => CustomTextField(
                   controller: controller.passwordController,
                   label: 'Password',
                   hint: 'Password',
@@ -111,7 +113,7 @@ class LoginView extends GetView<AuthController> {
 
               const SizedBox(height: 40),
 
-              // Login Button dengan Glow
+              // Login button with glow effect
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -123,8 +125,8 @@ class LoginView extends GetView<AuthController> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      shadowColor: AppColors.primary.withOpacity(0.5),
-                      elevation: 8, // Efek Glow
+                      shadowColor: AppColors.primary.withValues(alpha: 0.5),
+                      elevation: 8,
                     ),
                     onPressed: controller.isLoading.value
                         ? null
@@ -161,8 +163,8 @@ class LoginView extends GetView<AuthController> {
                   ),
                   GestureDetector(
                     onTap: () => Get.toNamed(
-                      '/register',
-                    ), // Ganti dengan Routes.REGISTER
+                      Routes.REGISTER,
+                    ),
                     child: const Text(
                       'Register here',
                       style: TextStyle(
@@ -177,66 +179,6 @@ class LoginView extends GetView<AuthController> {
           ),
         ),
       ),
-    );
-  }
-
-  // Reusable TextField Widget (Biar kodenya bersih)
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    bool isPassword = false,
-    bool isObscure = false,
-    VoidCallback? onTogglePassword,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Get.textTheme.labelLarge?.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          obscureText: isObscure,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF555555)),
-            prefixIcon: Icon(icon, color: AppColors.primary),
-            suffixIcon: isPassword
-                ? IconButton(
-                    icon: Icon(
-                      isObscure ? Icons.visibility_off : Icons.visibility,
-                      color: AppColors.textSecondary,
-                    ),
-                    onPressed: onTogglePassword,
-                  )
-                : null,
-            filled: true,
-            fillColor: AppColors.surface,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.5,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

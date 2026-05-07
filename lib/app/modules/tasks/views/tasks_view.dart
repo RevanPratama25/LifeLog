@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:life_log_frontend/app/modules/tasks/controllers/tasks_controller.dart';
+import '../controllers/tasks_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_pages.dart';
 
@@ -87,10 +87,10 @@ class TaskView extends GetView<TaskController> {
 
           final allDocs = snapshot.data?.docs ?? [];
 
-          // 🔥 MAGIC HAPPENS HERE: Ekstrak kategori secara dinamis
+          // Extract unique categories dynamically from the data
           final Set<String> uniqueCategories = {
             'ALL',
-          }; // Selalu pastikan 'ALL' ada di urutan pertama
+          };
           for (var doc in allDocs) {
             final data = doc.data() as Map<String, dynamic>;
             final cat =
@@ -101,7 +101,7 @@ class TaskView extends GetView<TaskController> {
           }
           final dynamicCategories = uniqueCategories.toList();
 
-          // Saring data berdasarkan kategori yang lagi dipilih
+          // Filter data by the currently selected category
           final filteredDocs = currentCategory == 'ALL'
               ? allDocs
               : allDocs.where((doc) {
@@ -112,7 +112,7 @@ class TaskView extends GetView<TaskController> {
 
           return Column(
             children: [
-              // 🔥 Lempar list kategori dinamis ke fungsi pembangun chips
+              // Pass dynamic category list to the chip builder
               _buildCategoryChips(dynamicCategories),
 
               Expanded(
@@ -121,9 +121,9 @@ class TaskView extends GetView<TaskController> {
                         child: Text(
                           currentCategory == 'ALL'
                               ? (isTaskList
-                                    ? 'Tidak ada rencana aktif.'
-                                    : 'Belum ada log selesai.')
-                              : 'Tidak ada data untuk kategori $currentCategory.',
+                                    ? 'No active plans.'
+                                    : 'No completed logs yet.')
+                              : 'No data for category $currentCategory.',
                           style: const TextStyle(color: Colors.white54),
                         ),
                       )
@@ -149,14 +149,12 @@ class TaskView extends GetView<TaskController> {
     });
   }
 
-  // 🔥 Tambahkan parameter List<String>
   Widget _buildCategoryChips(List<String> categories) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Obx(
         () => Row(
-          // 🔥 Gunakan parameter 'categories' di sini
           children: categories.map((cat) {
             final isActive = controller.selectedCategory.value == cat;
             return GestureDetector(
@@ -260,17 +258,17 @@ class TaskView extends GetView<TaskController> {
     );
   }
 
-  // 🔥 Fungsi untuk memunculkan input Insight saat complete task
+  /// Shows the completion prompt bottom sheet with an optional insight field.
   void _showCompletionPrompt(String docId, String title) {
-    // Pastikan text field kosong setiap kali dibuka
-    controller.completionNoteController.clear();
+    // Ensure the text field is empty each time
+    controller.completionNoteController.clear;
 
     Get.bottomSheet(
-      // 🔥 PENTING: Gunakan Builder agar kita bisa ambil context untuk deteksi keyboard
+      // Use Builder to access context for keyboard-aware padding
       Builder(
         builder: (context) {
           return Container(
-            // Padding bawah kita dinamis ngikutin tinggi keyboard biar gak ketutupan!
+            // Dynamic bottom padding to account for keyboard height
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom + 24,
               left: 24,
@@ -282,7 +280,6 @@ class TaskView extends GetView<TaskController> {
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: SingleChildScrollView(
-              // 🔥 BUNGKUS COLUMN PAKAI INI
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,7 +314,7 @@ class TaskView extends GetView<TaskController> {
 
                   const SizedBox(height: 24),
 
-                  // Input Insight
+                  // Insight input field
                   TextField(
                     controller: controller.completionNoteController,
                     maxLines: 3,
@@ -337,7 +334,7 @@ class TaskView extends GetView<TaskController> {
 
                   const SizedBox(height: 24),
 
-                  // Tombol Submit
+                  // Submit button
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -365,12 +362,11 @@ class TaskView extends GetView<TaskController> {
           );
         },
       ),
-      isScrollControlled:
-          true, // Wajib true agar bottom sheet bisa naik saat keyboard muncul
+      isScrollControlled: true,
     );
   }
 
-  // 🔥 Fungsi untuk memunculkan Bottom Sheet Detail
+  /// Shows the detail bottom sheet with Edit and Delete actions.
   void _showDetailBottomSheet(Map<String, dynamic> data, String docId) {
     final title = data['title']?.toString() ?? 'No Title';
     final category = data['category']?.toString() ?? 'GENERAL';
@@ -381,14 +377,14 @@ class TaskView extends GetView<TaskController> {
       Container(
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
-          color: AppColors.surface, // Sesuaikan dengan warna surface lu
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Biar tingginya nyesuaiin konten
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Handle bar (garis kecil di atas)
+            // Handle bar
             Center(
               child: Container(
                 width: 40,
@@ -401,7 +397,7 @@ class TaskView extends GetView<TaskController> {
             ),
             const SizedBox(height: 24),
 
-            // Kategori & Status
+            // Category & Status
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -422,7 +418,7 @@ class TaskView extends GetView<TaskController> {
             ),
             const SizedBox(height: 12),
 
-            // Judul
+            // Title
             Text(
               title,
               style: Get.textTheme.displayMedium?.copyWith(
@@ -431,7 +427,7 @@ class TaskView extends GetView<TaskController> {
             ),
             const SizedBox(height: 16),
 
-            // Deskripsi (Bisa panjang)
+            // Description (may be long)
             if (desc.isNotEmpty) ...[
               const Text(
                 'Deskripsi:',
@@ -452,14 +448,14 @@ class TaskView extends GetView<TaskController> {
             const Divider(color: Colors.white12),
             const SizedBox(height: 16),
 
-            // Tombol Action (Edit & Delete)
+            // Action buttons (Edit & Delete)
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      Get.back(); // Tutup bottom sheet dulu
-                      // 🔥 Lempar data ke halaman AddEntry
+                      Get.back();
+                      // Navigate to AddEntry in edit mode
                       Get.toNamed(
                         Routes.ADD_ENTRY,
                         arguments: {
@@ -468,14 +464,12 @@ class TaskView extends GetView<TaskController> {
                           'data': data,
                         },
                       );
-                      // (Catatan: Pastikan nama route lu bener, misal Routes.ADD_ENTRY kalau lu pake konstanta)
                     },
                     icon: const Icon(Icons.edit, color: Colors.white),
                     label: const Text(
                       'Edit',
                       style: TextStyle(color: Colors.white),
                     ),
-                    // ... (style tetep sama)
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       side: const BorderSide(color: Colors.white24),
@@ -489,7 +483,6 @@ class TaskView extends GetView<TaskController> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // 🔥 Panggil fungsi hapus
                       controller.deleteTask(docId);
                     },
                     icon: const Icon(Icons.delete_outline, color: Colors.white),
@@ -510,12 +503,11 @@ class TaskView extends GetView<TaskController> {
             ),
             const SizedBox(
               height: 16,
-            ), // Extra padding bawah biar aman di iOS/Android
+            ),
           ],
         ),
       ),
-      isScrollControlled:
-          true, // Biar bottom sheet bisa agak tinggi kalau teksnya panjang
+      isScrollControlled: true,
     );
   }
 }

@@ -3,13 +3,11 @@ import 'package:get/get.dart';
 import '../controllers/root_controller.dart';
 import '../../../core/theme/app_colors.dart';
 
-class RootView extends StatelessWidget {
+class RootView extends GetView<RootController> {
   const RootView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Inject controller directly when this page is built
-    Get.put(RootController());
 
     return Scaffold(
       backgroundColor: AppColors.background,

@@ -22,7 +22,7 @@ class TimelineView extends GetView<TimelineController> {
               controller: controller.searchController,
               style: const TextStyle(color: Colors.white, fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Cari catatan atau aktivitas...',
+                hintText: 'Search notes or activities...',
                 hintStyle: const TextStyle(color: Colors.white38),
                 prefixIcon: const Icon(
                   Icons.search,
@@ -42,15 +42,15 @@ class TimelineView extends GetView<TimelineController> {
                       : const SizedBox(),
                 ),
                 filled: true,
-                fillColor: AppColors.surface, // Atau Colors.white10
+                fillColor: AppColors.surface,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
@@ -60,9 +60,8 @@ class TimelineView extends GetView<TimelineController> {
             ),
           ),
 
-          // 🔥 KONTEN TIMELINE LIST
+          // Timeline list content
           Expanded(
-            // Obx DIHAPUS dari sini, StreamBuilder dibiarkan murni nempel ke Firebase
             child: StreamBuilder<QuerySnapshot>(
               stream: controller.entriesStream, 
               builder: (context, snapshot) {
@@ -72,9 +71,8 @@ class TimelineView extends GetView<TimelineController> {
 
                 final allDocs = snapshot.data?.docs ?? [];
 
-                // 🔥 OBX DIPINDAH KE SINI!
-                // Sekarang Obx cuma nge-rebuild list-nya doang tiap kali lu ngetik, 
-                // tanpa mutus stream/koneksi ke database. Instant & No Loading!
+                // Obx wraps only the filtered list rebuild on search query changes,
+                // without interrupting the Firestore stream connection.
                 return Obx(() {
                   final String query = controller.searchQuery.value.toLowerCase();
                   
@@ -83,7 +81,7 @@ class TimelineView extends GetView<TimelineController> {
                     final title = (data['title']?.toString() ?? '').toLowerCase();
                     final desc = (data['description']?.toString() ?? '').toLowerCase();
                     final note = (data['note']?.toString() ?? '').toLowerCase();
-                    final category = (data['category']?.toString() ?? '').toLowerCase(); // 🔥 Ditambahin biar bisa nyari kategori
+                    final category = (data['category']?.toString() ?? '').toLowerCase();
 
                     return query.isEmpty || 
                            title.contains(query) || 
@@ -91,11 +89,10 @@ class TimelineView extends GetView<TimelineController> {
                            note.contains(query) ||
                            category.contains(query);
                   }).toList();
-
                   if (filteredDocs.isEmpty) {
                     return Center(
                       child: Text(
-                        query.isEmpty ? 'Belum ada riwayat aktivitas.' : 'Tidak ditemukan hasil untuk "$query".',
+                        query.isEmpty ? 'No activity history yet.' : 'No results found for "$query".',
                         style: const TextStyle(color: Colors.white54),
                       ),
                     );
@@ -109,7 +106,7 @@ class TimelineView extends GetView<TimelineController> {
                       final String docId = filteredDocs[index].id;
                       final bool isLast = index == filteredDocs.length - 1;
 
-                      // 🔥 LOGIKA DATE GROUPING (Tetap Aman)
+                      // Date grouping logic
                       final currentDate = (data['createdAt'] as Timestamp?)?.toDate();
                       DateTime? previousDate;
                       
@@ -120,14 +117,14 @@ class TimelineView extends GetView<TimelineController> {
 
                       final bool showHeader = index == 0 || !_isSameDay(currentDate, previousDate);
 
-                      // 🔥 KONTEN TIMELINE BESERTA DISMISSIBLE
+                      // Timeline content with Dismissible swipe-to-delete
                       Widget timelineContent = Dismissible(
                         key: Key(docId),
                         direction: DismissDirection.endToStart,
                         background: Container(
                           margin: const EdgeInsets.only(bottom: 24),
                           decoration: BoxDecoration(
-                            color: Colors.redAccent.withOpacity(0.8),
+                            color: Colors.redAccent.withValues(alpha: 0.8),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           alignment: Alignment.centerRight,
@@ -154,7 +151,7 @@ class TimelineView extends GetView<TimelineController> {
                         ),
                       );
 
-                      // 🔥 GABUNGKAN HEADER & KONTEN
+                      // Combine date header with content
                       if (showHeader) {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +165,7 @@ class TimelineView extends GetView<TimelineController> {
                       return timelineContent;
                     },
                   );
-                }); // Tutup Obx
+                }); // Close Obx
               },
             ),
           ),
@@ -240,53 +237,37 @@ class TimelineView extends GetView<TimelineController> {
   }
 
   Widget _buildLogCard(Map<String, dynamic> data, String docId) {
-    //  Ekstrak Data
+    // Extract data
     final String title = data['title']?.toString() ?? 'No Title';
     final String category = data['category']?.toString() ?? 'UNCATEGORIZED';
     final String note = data['note']?.toString() ?? '';
-    final String dateStr = controller.formatTimestamp(
-      data['createdAt'] as Timestamp?,
-    );
-
     final timestamp = data['createdAt'] as Timestamp?;
     String timeStr = '';
 
     if (timestamp != null) {
       final dateObj = timestamp.toDate();
-      // padLeft(2, '0') fungsinya biar angka di bawah 10 dikasih '0' di depannya
-      // Contoh: Jam 9 lebih 5 menit -> jadinya "09:05", bukan "9:5"
-      final hour = dateObj.hour.toString().padLeft(2, '0');
+        final hour = dateObj.hour.toString().padLeft(2, '0');
       final minute = dateObj.minute.toString().padLeft(2, '0');
       timeStr = '$hour:$minute';
     }
 
-    //  Cek Jenis Data
+    // Check entry type
     final bool isTask = data['isTask'] == true;
     final bool isDone = data['isDone'] == true;
 
-    //  Tentukan Gaya Visual
-    // Kalau ini Task dan BELUM selesai, tampilannya beda.
+    // Determine visual style
     final bool isPendingTask = isTask && !isDone;
 
-    // Kita pakai warna yang lebih redup untuk Task yang belum selesai
+    // Use subdued style for pending tasks
     final Color cardColor = isPendingTask
         ? Colors.transparent
         : AppColors.surface;
     final Color borderColor = isPendingTask
-        ? AppColors.primary.withOpacity(0.3)
-        : AppColors.primary.withOpacity(0.1);
-
-    // Ikon penanda status
-    final IconData statusIcon = isPendingTask
-        ? Icons.hourglass_empty_rounded
-        : Icons.check_circle_rounded;
-    final Color statusColor = isPendingTask
-        ? Colors.orangeAccent
-        : AppColors.primary;
+        ? AppColors.primary.withValues(alpha: 0.3)
+        : AppColors.primary.withValues(alpha: 0.1);
 
     return InkWell(
-      onTap: () =>
-          _showDetailBottomSheet(data, docId), //Panggil bottom sheet di sini
+      onTap: () => _showDetailBottomSheet(data, docId),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -294,7 +275,6 @@ class TimelineView extends GetView<TimelineController> {
           color: cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: borderColor),
-          // Tambahkan efek dashed border nanti kalau perlu, tapi untuk sekarang border solid yang tipis udah cukup membedakan.
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,7 +291,7 @@ class TimelineView extends GetView<TimelineController> {
                   ),
                 ),
 
-                // Ganti Text tanggal lu yang lama dengan ini:
+                // Time display
                 Row(
                   children: [
                     const Icon(
@@ -321,7 +301,7 @@ class TimelineView extends GetView<TimelineController> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      timeStr, // <- Manggil variabel jam yang udah kita format
+                      timeStr,
                       style: const TextStyle(
                         color: Colors.white54,
                         fontSize: 10,
@@ -361,13 +341,12 @@ class TimelineView extends GetView<TimelineController> {
               ),
             ],
 
-            // Additional Features: Tombol "Complete" untuk Pending Task
+            // "Complete" button for pending tasks
             if (isPendingTask) ...[
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
-                  // Call Bottom Sheet
                   onPressed: () => _showCompletionPrompt(docId, title),
                   icon: const Icon(Icons.check, size: 16, color: Colors.white),
                   label: const Text(
@@ -375,7 +354,7 @@ class TimelineView extends GetView<TimelineController> {
                     style: TextStyle(color: Colors.white, fontSize: 12),
                   ),
                   style: TextButton.styleFrom(
-                    backgroundColor: AppColors.primary.withOpacity(0.2),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.2),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -468,7 +447,7 @@ class TimelineView extends GetView<TimelineController> {
                     child: ElevatedButton.icon(
                       onPressed: () => controller.completeTask(
                         docId,
-                      ), // Call completeTask from TimelineController
+                      ),
                       icon: const Icon(Icons.check, color: Colors.white),
                       label: const Text(
                         'Mark as Done',
@@ -554,7 +533,7 @@ class TimelineView extends GetView<TimelineController> {
               ),
               const SizedBox(height: 16),
 
-              // Tampilkan Deskripsi jika ada
+      // Show description if present
               if (desc.isNotEmpty) ...[
                 const Text(
                   'Deskripsi:',
@@ -572,10 +551,10 @@ class TimelineView extends GetView<TimelineController> {
                 const SizedBox(height: 16),
               ],
 
-              // Tampilkan Insight/Note jika ada (khusus untuk Timeline)
+              // Show insight/note if present
               if (note.isNotEmpty) ...[
                 const Text(
-                  'Catatan / Insight:',
+                  'Notes / Insight:',
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 const SizedBox(height: 4),
@@ -609,7 +588,7 @@ class TimelineView extends GetView<TimelineController> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Get.back();
-                        // Lempar ke form Edit yang udah kita bikin pintar
+                        // Navigate to edit form
                         Get.toNamed(
                           Routes.ADD_ENTRY,
                           arguments: {
@@ -646,7 +625,7 @@ class TimelineView extends GetView<TimelineController> {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent.withOpacity(0.8),
+                        backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -665,7 +644,7 @@ class TimelineView extends GetView<TimelineController> {
     );
   }
 
-  // 1. Cek apakah dua tanggal berada di hari yang sama
+  // Checks whether two dates are the same calendar day
   bool _isSameDay(DateTime? date1, DateTime? date2) {
     if (date1 == null || date2 == null) return false;
     return date1.year == date2.year &&
@@ -673,17 +652,17 @@ class TimelineView extends GetView<TimelineController> {
         date1.day == date2.day;
   }
 
-  // 2. Format tanggal jadi teks (Hari Ini, Kemarin, atau 24 Apr 2026)
+  // Formats a date into header text (Today, Yesterday, or "24 Apr 2026")
   String _getDateHeader(DateTime? date) {
-    if (date == null) return 'Tidak Diketahui';
+    if (date == null) return 'Unknown';
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
     final targetDate = DateTime(date.year, date.month, date.day);
 
-    if (targetDate == today) return 'HARI INI';
-    if (targetDate == yesterday) return 'KEMARIN';
+    if (targetDate == today) return 'TODAY';
+    if (targetDate == yesterday) return 'YESTERDAY';
 
     const months = [
       'Jan',
@@ -702,7 +681,7 @@ class TimelineView extends GetView<TimelineController> {
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  // 3. UI Header Tanggal yang modern (mirip pembatas bab)
+  // Date header UI widget
   Widget _buildDateHeader(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0, top: 12.0),
@@ -711,9 +690,9 @@ class TimelineView extends GetView<TimelineController> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.15),
+              color: AppColors.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
             ),
             child: Text(
               text,

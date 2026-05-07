@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/custom_text_field.dart';
 
 class RegisterView extends GetView<AuthController> {
   const RegisterView({super.key});
@@ -17,7 +18,7 @@ class RegisterView extends GetView<AuthController> {
             children: [
               const SizedBox(height: 40),
               
-              // Tombol Back
+              // Back button
               GestureDetector(
                 onTap: () => Get.back(),
                 child: Container(
@@ -25,7 +26,7 @@ class RegisterView extends GetView<AuthController> {
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   ),
                   child: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
                 ),
@@ -36,34 +37,34 @@ class RegisterView extends GetView<AuthController> {
               // Header
               Text('Create Account.', style: Get.textTheme.displayLarge?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text('Mulai perjalanan produktifmu bersama LifeLog hari ini.', 
+              Text('Start your productive journey with LifeLog today.', 
                   style: Get.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary)),
               
               const SizedBox(height: 40),
 
-              // Form Nama
-              _buildTextField(
+              // Name field
+              CustomTextField(
                 controller: controller.nameController,
-                label: 'Nama Lengkap',
-                hint: 'Masukkan namamu',
+                label: 'Full Name',
+                hint: 'Enter your name',
                 icon: Icons.person_outline,
               ),
               const SizedBox(height: 24),
               
-              // Form Email
-              _buildTextField(
+              // Email field
+              CustomTextField(
                 controller: controller.emailController,
                 label: 'Email',
-                hint: 'contoh@email.com',
+                hint: 'example@email.com',
                 icon: Icons.email_outlined,
               ),
               const SizedBox(height: 24),
               
-              // Form Password
-              Obx(() => _buildTextField(
+              // Password field
+              Obx(() => CustomTextField(
                 controller: controller.passwordController,
                 label: 'Password',
-                hint: 'Buat password yang kuat',
+                hint: 'Create a strong password',
                 icon: Icons.lock_outline,
                 isPassword: true,
                 isObscure: controller.isPasswordHidden.value,
@@ -72,7 +73,7 @@ class RegisterView extends GetView<AuthController> {
               
               const SizedBox(height: 40),
               
-              // Register Button dengan Glow
+              // Register button with glow effect
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -81,27 +82,27 @@ class RegisterView extends GetView<AuthController> {
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    shadowColor: AppColors.primary.withOpacity(0.5),
-                    elevation: 8, // Efek Glow
+                    shadowColor: AppColors.primary.withValues(alpha: 0.5),
+                    elevation: 8,
                   ),
                   onPressed: controller.isLoading.value ? null : controller.register,
                   child: controller.isLoading.value
                       ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Daftar Sekarang', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : const Text('Register Now', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 )),
               ),
               
               const SizedBox(height: 40),
               
-              // Login Link
+              // Login link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Sudah punya akun? ', style: Get.textTheme.bodyMedium),
+                  Text('Already have an account? ', style: Get.textTheme.bodyMedium),
                   GestureDetector(
-                    onTap: () => Get.back(), // Langsung Get.back() karena asalnya dari halaman Login
+                    onTap: () => Get.back(),
                     child: const Text(
-                      'Masuk di sini',
+                      'Log in here',
                       style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -114,50 +115,4 @@ class RegisterView extends GetView<AuthController> {
       ),
     );
   }
-
-  // Reusable TextField Widget
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required IconData icon,
-    bool isPassword = false,
-    bool isObscure = false,
-    VoidCallback? onTogglePassword,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Get.textTheme.labelLarge?.copyWith(color: AppColors.textSecondary)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          obscureText: isObscure,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF555555)),
-            prefixIcon: Icon(icon, color: AppColors.primary),
-            suffixIcon: isPassword
-                ? IconButton(
-                    icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
-                    onPressed: onTogglePassword,
-                  )
-                : null,
-            filled: true,
-            fillColor: AppColors.surface,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
+}

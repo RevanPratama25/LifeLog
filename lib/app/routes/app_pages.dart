@@ -29,12 +29,16 @@ import '../modules/tasks/views/tasks_view.dart';
 import '../modules/root/bindings/root_binding.dart';
 import '../modules/root/views/root_view.dart';
 
+//Reflections
+import '../modules/reflections/bindings/reflections_binding.dart';
+import '../modules/reflections/views/reflections_view.dart';
+
 part 'app_routes.dart';
 
 class AppPages {
   AppPages._();
 
-  // Halaman pertama yang muncul saat aplikasi dibuka
+  // First page displayed when the app launches
   static const INITIAL = Routes.ROOT;
 
   static final routes = [
@@ -87,6 +91,12 @@ class AppPages {
       name: _Paths.TASK,
       page: () => const TaskView(),
       binding: TaskBinding(),
+    ),
+
+    GetPage(
+      name: _Paths.REFLECTIONS,
+      page: () => const ReflectionView(),
+      binding: ReflectionsBinding(),
     ),
   ];
 }

@@ -1,13 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/reflections_controller.dart';
 
 class ReflectionView extends GetView<ReflectionController> {
   const ReflectionView({super.key});
 
-  // Helper untuk format tanggal di bawah quote
+  // Formats a date for display below quote cards
   String _formatDate(DateTime? date) {
     if (date == null) return '';
     const months = [
@@ -27,11 +28,10 @@ class ReflectionView extends GetView<ReflectionController> {
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
-  // Fungsi untuk memunculkan Full Note
-  // 🔥 Fungsi Bottom Sheet Detail + Tombol Edit/Delete
+  // Shows the full note in a bottom sheet with Edit/Delete actions
   void _showNoteDetail(Map<String, dynamic> data, String docId) {
     final note = data['note']?.toString() ?? '';
-    final title = data['title']?.toString() ?? 'Aktivitas';
+    final title = data['title']?.toString() ?? 'Activity';
     final category = data['category']?.toString() ?? 'UNCATEGORIZED';
     final timestamp = data['createdAt'] as Timestamp?;
     final dateStr = _formatDate(timestamp?.toDate());
@@ -40,7 +40,7 @@ class ReflectionView extends GetView<ReflectionController> {
       Container(
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
-          color: Color(0xFF121212), // Warna background bottom sheet
+          color: AppColors.background,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SingleChildScrollView(
@@ -66,7 +66,7 @@ class ReflectionView extends GetView<ReflectionController> {
                   Text(
                     category,
                     style: const TextStyle(
-                      color: Colors.teal,
+                      color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                       letterSpacing: 1.2,
@@ -106,7 +106,7 @@ class ReflectionView extends GetView<ReflectionController> {
               const Divider(color: Colors.white12),
               const SizedBox(height: 16),
 
-              // 🔥 TOMBOL EDIT & DELETE DI SINI
+              // Edit & Delete action buttons
               Row(
                 children: [
                   Expanded(
@@ -114,9 +114,7 @@ class ReflectionView extends GetView<ReflectionController> {
                       onPressed: () async {
                         Get.back();
                         await Future.delayed(const Duration(milliseconds: 150));
-                        
-                        // 🔥 Ganti '/add-entry' dengan nama konstanta Route lu!
-                        // Biasanya pakai Routes.ADD_ENTRY
+
                         Get.toNamed(Routes.ADD_ENTRY, arguments: { 
                           'isEdit': true,
                           'docId': docId,
@@ -140,7 +138,7 @@ class ReflectionView extends GetView<ReflectionController> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton.icon(
-                      // Pastikan controller.deleteEntry udah ada di ReflectionController lu
+                      // Ensure controller.deleteEntry exists in ReflectionController
                       onPressed: () => controller.deleteEntry(docId),
                       icon: const Icon(
                         Icons.delete_outline,
@@ -151,7 +149,7 @@ class ReflectionView extends GetView<ReflectionController> {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent.withOpacity(0.8),
+                        backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -199,7 +197,7 @@ class ReflectionView extends GetView<ReflectionController> {
 
           final allDocs = snapshot.data?.docs ?? [];
 
-          // 🔥 1. FILTERING: Cuma ambil yang punya field 'note' dan isinya nggak kosong
+          // 1. Filter: Only keep entries that have non-empty 'note' field
           final docsWithNotes = allDocs.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
             final note = data['note']?.toString().trim() ?? '';
@@ -210,7 +208,7 @@ class ReflectionView extends GetView<ReflectionController> {
             return _buildEmptyState();
           }
 
-          // 🔥 2. GROUPING: Kelompokkan berdasarkan 'category'
+          // 2. Group by 'category'
           Map<String, List<QueryDocumentSnapshot>> groupedNotes = {};
 
           for (var doc in docsWithNotes) {
@@ -224,7 +222,7 @@ class ReflectionView extends GetView<ReflectionController> {
             groupedNotes[category]!.add(doc);
           }
 
-          // 🔥 3. RENDER UI
+          // 3. Render the grouped UI
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             itemCount: groupedNotes.length,
@@ -238,10 +236,10 @@ class ReflectionView extends GetView<ReflectionController> {
                   _buildCategoryHeader(category, notesList.length),
                   ...notesList.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-                    final docId = doc.id; // 🔥 Ambil docId
-                    return _buildQuoteCard(data, docId); // 🔥 Lempar data dan docId
-                  }).toList(),
-                  const SizedBox(height: 32), // Jarak antar kategori
+                    final docId = doc.id;
+                    return _buildQuoteCard(data, docId);
+                  }),
+                  const SizedBox(height: 32),
                 ],
               );
             },
@@ -251,7 +249,7 @@ class ReflectionView extends GetView<ReflectionController> {
     );
   }
 
-  // UI: Header Kategori
+  // Category header widget
   Widget _buildCategoryHeader(String category, int count) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -259,14 +257,14 @@ class ReflectionView extends GetView<ReflectionController> {
         children: [
           const Icon(
             Icons.folder_special,
-            color: Colors.teal,
+            color: AppColors.primary,
             size: 20,
-          ), // Ganti warna pakai AppColors.primary
+          ),
           const SizedBox(width: 8),
           Text(
             category,
             style: const TextStyle(
-              color: Colors.teal, // Ganti warna pakai AppColors.primary
+              color: AppColors.primary,
               fontWeight: FontWeight.bold,
               fontSize: 14,
               letterSpacing: 1.5,
@@ -276,15 +274,15 @@ class ReflectionView extends GetView<ReflectionController> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.teal.withValues(
+              color: AppColors.primary.withValues(
                 alpha: 0.2,
-              ), // AppColors.primary.withOpacity(0.2)
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               '$count',
               style: const TextStyle(
-                color: Colors.teal,
+                color: AppColors.primary,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),
@@ -296,22 +294,21 @@ class ReflectionView extends GetView<ReflectionController> {
     );
   }
 
-  // UI: Card Quote / Insight
-  // 🔥 Fungsi Card Quote (Maksimal 3 Baris)
+  // Quote card widget (max 3 lines preview)
   Widget _buildQuoteCard(Map<String, dynamic> data, String docId) {
     final note = data['note']?.toString() ?? '';
-    final title = data['title']?.toString() ?? 'Aktivitas';
+    final title = data['title']?.toString() ?? 'Activity';
     final timestamp = data['createdAt'] as Timestamp?;
     final dateStr = _formatDate(timestamp?.toDate());
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -320,21 +317,20 @@ class ReflectionView extends GetView<ReflectionController> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          onTap: () => _showNoteDetail(data, docId), // Panggil bottom sheet
+          onTap: () => _showNoteDetail(data, docId),
           child: Container(
             decoration: const BoxDecoration(
-              border: Border(left: BorderSide(color: Colors.teal, width: 4)),
+              border: Border(left: BorderSide(color: AppColors.primary, width: 4)),
             ),
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🔥 LOGIKA POTONG TEKS ADA DI SINI
+                // Text preview (max 3 lines with ellipsis)
                 Text(
                   '"$note"',
-                  maxLines: 3, // Maksimal 3 baris
-                  overflow: TextOverflow
-                      .ellipsis, // Otomatis jadi ... kalau kepanjangan
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -391,7 +387,7 @@ class ReflectionView extends GetView<ReflectionController> {
     );
   }
 
-  // UI: Kalau belum ada insight sama sekali
+  // Empty state when no insights exist yet
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -400,11 +396,11 @@ class ReflectionView extends GetView<ReflectionController> {
           Icon(
             Icons.auto_awesome,
             size: 64,
-            color: Colors.teal.withValues(alpha: 0.5),
+            color: AppColors.primary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           const Text(
-            'Belum ada Insight.',
+            'No Insights Yet.',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -413,7 +409,7 @@ class ReflectionView extends GetView<ReflectionController> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Selesaikan rencana dan catat\npembelajaranmu di sini.',
+            'Complete plans and record\nyour learnings here.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white54, fontSize: 14),
           ),

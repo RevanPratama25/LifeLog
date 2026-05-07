@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart'; // Jangan lupa package ini buat format tanggal
+import 'package:intl/intl.dart';
 import '../controllers/add_entry_controller.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/custom_text_field.dart';
 
 class AddEntryView extends GetView<AddEntryController> {
   const AddEntryView({super.key});
@@ -10,11 +11,11 @@ class AddEntryView extends GetView<AddEntryController> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, //Kita matikan fungsi pop otomatis
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return; // Kalau udah pop, jangan lakukan apa-apa
+        if (didPop) return;
 
-        // Cek apakah form ada isinya
+        // Check for unsaved changes before exiting
         if (controller.hasUnsavedChanges) {
           final confirm = await Get.dialog<bool>(
             AlertDialog(
@@ -33,13 +34,12 @@ class AddEntryView extends GetView<AddEntryController> {
               ],
             ),
           );
-          
-          // Jika user memilih Exit (true), lanjutkan pop
+          // If user confirmed exit, proceed with navigation
           if (confirm == true) {
             Get.back();
           }
         } else {
-          // Kalau kosong, langsung balik
+          // No unsaved changes — navigate back immediately
           Get.back();
         }
       },
@@ -52,8 +52,8 @@ class AddEntryView extends GetView<AddEntryController> {
               controller.isEditMode.value
                   ? 'Edit Data'
                   : (controller.isTaskMode.value
-                        ? 'Tambah Rencana'
-                        : 'Catat Aktivitas'),
+                        ? 'Add Plan'
+                        : 'Record Activity'),
               style: Get.textTheme.titleLarge,
             ),
           ),
@@ -66,19 +66,19 @@ class AddEntryView extends GetView<AddEntryController> {
             children: [
               _buildTypeToggle(),
               const SizedBox(height: 32),
-              _buildInput(
+              CustomTextField(
                 label: 'Title',
                 controller: controller.titleController,
-                hint: 'Contoh: Learn GetX',
+                hint: 'E.g. Learn GetX',
               ),
               const SizedBox(height: 20),
-              _buildInput(
+              CustomTextField(
                 label: 'Category',
                 controller: controller.categoryController,
-                hint: 'Contoh: Study, Hobby...',
+                hint: 'E.g. Study, Hobby...',
               ),
               const SizedBox(height: 20),
-              _buildInput(
+              CustomTextField(
                 label: 'Description',
                 controller: controller.descController,
                 hint: 'Optional details...',
@@ -86,7 +86,7 @@ class AddEntryView extends GetView<AddEntryController> {
               ),
 
               const SizedBox(height: 20),
-              // Form dinamis berubah tergantung mode yang dipilih
+              // Dynamic form section based on selected mode
               Obx(
                 () => controller.isTaskMode.value
                     ? _buildTaskExtras()
@@ -99,8 +99,7 @@ class AddEntryView extends GetView<AddEntryController> {
                 height: 55,
                 child: Obx(
                   () => ElevatedButton(
-                    // ... style sama kayak sebelumnya ...
-                    // Matikan fungsi klik kalau lagi loading
+                    // Disable button while loading
                     onPressed: controller.isLoading.value
                         ? null
                         : () => controller.saveEntry(),
@@ -130,7 +129,7 @@ class AddEntryView extends GetView<AddEntryController> {
     );
   }
 
-  // 1. Toggle Button Plan vs Action
+  // Toggle button: Task vs Log mode
   Widget _buildTypeToggle() {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -148,7 +147,7 @@ class AddEntryView extends GetView<AddEntryController> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
                     color: controller.isTaskMode.value
-                        ? AppColors.primary.withOpacity(0.2)
+                        ? AppColors.primary.withValues(alpha: 0.2)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
@@ -178,7 +177,7 @@ class AddEntryView extends GetView<AddEntryController> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
                     color: !controller.isTaskMode.value
-                        ? AppColors.primary.withOpacity(0.2)
+                        ? AppColors.primary.withValues(alpha: 0.2)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
@@ -207,7 +206,7 @@ class AddEntryView extends GetView<AddEntryController> {
     );
   }
 
-  // 2. Extra Field buat Task (Deadline Date Picker)
+  // Extra fields for Task mode (deadline date picker)
   Widget _buildTaskExtras() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,7 +239,7 @@ class AddEntryView extends GetView<AddEntryController> {
                 Obx(
                   () => Text(
                     controller.deadlineDate.value == null
-                        ? 'Pilih Tanggal'
+                        ? 'Pick a Date'
                         : DateFormat(
                             'dd MMMM yyyy',
                           ).format(controller.deadlineDate.value!),
@@ -259,95 +258,14 @@ class AddEntryView extends GetView<AddEntryController> {
       ],
     );
   }
-
-  // 3. Extra Field buat Log (Notes/Insight)
+  // Extra fields for Log mode (notes/insight)
   Widget _buildLogExtras() {
-    return _buildInput(
-      label: 'Catatan / Insight (Opsional)',
+    return CustomTextField(
+      label: 'Notes / Insight (Optional)',
       controller: controller.noteController,
-      hint: 'Apa pembelajaran dari aktivitas ini?',
+      hint: 'What did you learn from this activity?',
       maxLines: 4,
       icon: Icons.lightbulb_outline,
-    );
-  }
-
-  // Helper untuk Input Text Field biar seragam
-  Widget _buildInput({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    int maxLines = 1,
-    IconData? icon,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Get.textTheme.labelLarge?.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF555555)),
-            prefixIcon: icon != null
-                ? Icon(icon, color: AppColors.primary)
-                : null,
-            filled: true,
-            fillColor: AppColors.surface,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.5,
-              ), // Efek glow pas diklik
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Exit Confirmation Dialog
-  void _showExitConfirmation() {
-    Get.defaultDialog(
-      title: 'Are you sure?',
-      middleText:
-          'The data you have typed will be lost. Are you sure you want to quit?',
-      backgroundColor: AppColors.surface,
-      titleStyle: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-      ),
-      middleTextStyle: const TextStyle(color: Colors.white70),
-      contentPadding: const EdgeInsets.all(20),
-
-      // Tombol Batal Keluar
-      textCancel: 'Keep Typing',
-      cancelTextColor: AppColors.primary,
-
-      // Tombol Ya, Keluar
-      textConfirm: 'Yes, Quit',
-      confirmTextColor: Colors.white,
-      buttonColor: Colors.redAccent,
-      onConfirm: () {
-        Get.back(); // Tutup dialog
-        Get.back(); // Balik ke halaman sebelumnya (Dashboard)
-      },
     );
   }
 }

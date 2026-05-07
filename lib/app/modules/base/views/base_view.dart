@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:life_log_frontend/app/routes/app_pages.dart';
+import '../../../routes/app_pages.dart';
 import '../controllers/base_controller.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -13,7 +13,7 @@ class BaseView extends GetView<BaseController> {
       extendBody: true,
       body: Obx(() => controller.screens[controller.currentIndex.value]),
       
-      // TAMBAHKAN FAB DI SINI
+      // Add FAB
       floatingActionButton: Obx(() => _buildContextualFAB()),
       
       bottomNavigationBar: _buildFloatingNavbar(),
@@ -31,13 +31,13 @@ class BaseView extends GetView<BaseController> {
       ),
       onPressed: () {
         if (index == 1) {
-          // Tab Tasks: Otomatis mode Task
+          // Tab Tasks: Auto-select Task mode
           Get.toNamed(Routes.ADD_ENTRY, arguments: {'isTask': true});
         } else if (index == 3) {
-          // Tab Reflections: Otomatis mode Log
+          // Tab Reflections: Auto-select Log mode
           Get.toNamed(Routes.ADD_ENTRY, arguments: {'isTask': false});
         } else {
-          // Tab Dashboard/Timeline: Tampilkan Bottom Sheet Pilihan
+          // Dashboard/Timeline: Show selection bottom sheet
           _showEntryOptions();
         }
       },
@@ -58,7 +58,7 @@ class BaseView extends GetView<BaseController> {
           children: [
             ListTile(
               leading: const Icon(Icons.add_task, color: AppColors.primary),
-              title: const Text('Buat Rencana Baru (Task)'),
+              title: const Text('Create New Plan (Task)'),
               onTap: () {
                 Get.back();
                 Get.toNamed(Routes.ADD_ENTRY, arguments: {'isTask': true});
@@ -67,7 +67,7 @@ class BaseView extends GetView<BaseController> {
             const Divider(color: Colors.white10),
             ListTile(
               leading: const Icon(Icons.lightbulb_outline, color: AppColors.primary),
-              title: const Text('Catat Aktivitas Baru (Log)'),
+              title: const Text('Record New Activity (Log)'),
               onTap: () {
                 Get.back();
                 Get.toNamed(Routes.ADD_ENTRY, arguments: {'isTask': false});

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
-import '../../../routes/app_pages.dart'; // Pastikan path ini benar untuk Routes.BASE
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../routes/app_pages.dart';
 
 class AuthController extends GetxController {
   final nameController = TextEditingController();
@@ -11,7 +11,7 @@ class AuthController extends GetxController {
   final isPasswordHidden = true.obs;
   final isLoading = false.obs;
 
-  // Inisialisasi instance Firebase Auth
+  // Firebase Auth instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   void togglePasswordVisibility() {
@@ -23,13 +23,13 @@ class AuthController extends GetxController {
       'Oops, Something went wrong',
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.redAccent.withOpacity(0.8),
+      backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
       colorText: Colors.white,
       margin: const EdgeInsets.all(16),
     );
   }
 
-  // Logic Validasi & Login Firebase
+  /// Validates credentials and signs in via Firebase.
   void login() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -48,17 +48,17 @@ class AuthController extends GetxController {
     isLoading.value = true;
     
     try {
-      // Nembak API Login Firebase
+      // Authenticate with Firebase
       await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       
-      // Kalau sukses, langsung pindah ke Navbar/Dashboard
-      Get.offAllNamed(Routes.BASE); 
+      // On success, navigate to the main dashboard
+      Get.offAllNamed(Routes.BASE);
       
     } on FirebaseAuthException catch (e) {
-      // Menangkap error spesifik dari server Firebase
+      // Handle Firebase-specific auth errors
       if (e.code == 'user-not-found' || e.code == 'invalid-credential') {
         _showError('Email not registered or invalid credentials.');
       } else if (e.code == 'wrong-password') {
@@ -73,7 +73,7 @@ class AuthController extends GetxController {
     }
   }
 
-  // Logic Validasi & Register Firebase
+  /// Validates input and creates a new Firebase account.
   void register() async {
     final name = nameController.text.trim();
     final email = emailController.text.trim();
@@ -98,20 +98,20 @@ class AuthController extends GetxController {
     isLoading.value = true;
     
     try {
-      // Nembak API Daftar Akun Firebase
+      // Create Firebase account
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Update display name di profil Firebase biar nama lengkapnya kesimpen
+      // Save the display name to Firebase profile
       await userCredential.user?.updateDisplayName(name);
-      
-      // Kalau sukses, langsung pindah ke Navbar/Dashboard
+
+      // On success, navigate to the main dashboard
       Get.offAllNamed(Routes.BASE);
       
     } on FirebaseAuthException catch (e) {
-      // Menangkap error spesifik pendaftaran
+      // Handle Firebase-specific registration errors
       if (e.code == 'weak-password') {
         _showError('Password is too weak.');
       } else if (e.code == 'email-already-in-use') {
@@ -126,7 +126,7 @@ class AuthController extends GetxController {
     }
   }
 
-  // Fungsi Reset Password
+  /// Sends a password reset email.
   void resetPassword(String emailInput) async {
     final email = emailInput.trim();
     
@@ -143,20 +143,20 @@ class AuthController extends GetxController {
     isLoading.value = true;
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      Get.back(); // Tutup dialog input email
+      Get.back(); // Close the email input dialog
       
       Get.snackbar(
         'Email Sent',
         'Please check your inbox or spam folder.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.withOpacity(0.8),
+        backgroundColor: Colors.green.withValues(alpha: 0.8),
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
       );
     } on FirebaseAuthException catch (e) {
-      _showError(e.message ?? 'Gagal mengirim email reset.');
+      _showError(e.message ?? 'Failed to send reset email.');
     } catch (e) {
-      _showError('Terjadi kesalahan: $e');
+      _showError('An error occurred: $e');
     } finally {
       isLoading.value = false;
     }

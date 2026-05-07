@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart'; // Untuk HapticFeedback
+import 'package:flutter/services.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/firestore_helpers.dart';
 
 class AddEntryController extends GetxController {
   final isTaskMode = true.obs;
@@ -10,6 +12,8 @@ class AddEntryController extends GetxController {
 
   final isEditMode = false.obs;
   String? editDocId;
+
+  // Stores initial form values to detect unsaved changes
 
   final titleController = TextEditingController();
   final descController = TextEditingController();
@@ -25,7 +29,6 @@ class AddEntryController extends GetxController {
 
   final deadlineDate = Rx<DateTime?>(null);
 
-  // Inisialisasi Firestore & Auth
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -33,29 +36,29 @@ class AddEntryController extends GetxController {
   void onInit() {
     super.onInit();
 
-    // Cek apakah ada data yang dilempar dari halaman sebelumnya
+    // Check if arguments were passed from the previous page
     if (Get.arguments != null) {
-      // Cek argumen default (pas mau bikin baru dari Home)
+      // Check default argument (when creating new entry from Home)
       if (Get.arguments['isTask'] != null) {
         isTaskMode.value = Get.arguments['isTask'];
       }
 
-      // 🔥 Cek argumen Edit Mode
+      // Check for Edit Mode arguments
       if (Get.arguments['isEdit'] == true) {
         isEditMode.value = true;
         editDocId = Get.arguments['docId'];
 
-        // Ekstrak data yang mau diedit
+        // Extract the data to edit
         final data = Get.arguments['data'] as Map<String, dynamic>;
 
-        // Isi otomatis TextController dengan data lama
+        // Pre-fill text controllers with existing data
         titleController.text = data['title']?.toString() ?? '';
         descController.text = data['description']?.toString() ?? '';
         categoryController.text = data['category']?.toString() ?? '';
         noteController.text = data['note']?.toString() ?? '';
         
-        // If the data is completed (isDone: true), force it open as Log (false).
-        // If not completed yet, follow the original status.
+        // If completed (isDone: true), open as Log mode.
+        // Otherwise, follow the original task/log status.
         isTaskMode.value = data['isDone'] == true
             ? false
             : (data['isTask'] == true);
@@ -66,7 +69,7 @@ class AddEntryController extends GetxController {
       }
     }
 
-    // 🔥 PINDAH KE SINI: REKAM KONDISI AWAL SETELAH SEMUA DATA DIISI
+    // Record initial state after all data is populated
     _initialTitle = titleController.text;
     _initialDesc = descController.text;
     _initialCategory = categoryController.text;
@@ -89,9 +92,9 @@ class AddEntryController extends GetxController {
         return Theme(
           data: ThemeData.dark().copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: Colors.cyan, // Adjusted to AppColors.primary
+              primary: AppColors.primary,
               onPrimary: Colors.black,
-              surface: Color(0xFF1E1E1E), // AppColors.surface
+              surface: AppColors.surface,
               onSurface: Colors.white,
             ),
           ),
@@ -105,7 +108,7 @@ class AddEntryController extends GetxController {
     }
   }
 
-  // Fungsi simpan ke Cloud Firestore
+  /// Saves or updates the entry in Cloud Firestore.
   Future<void> saveEntry() async {
     final title = titleController.text.trim();
     final desc = descController.text.trim();
@@ -136,10 +139,7 @@ class AddEntryController extends GetxController {
             : category,
         'note': note,
         'isTask': isTaskMode.value,
-        // Jangan timpa createdAt dan isDone kalau lagi ngedit
-
-        // Kalo toggle-nya diubah jadi Log, otomatis jadi selesai (true).
-        // Kalo toggle-nya dibalikin jadi Task, otomatis jadi aktif lagi (false).
+        // Log mode = completed (true), Task mode = active (false)
         'isDone': !isTaskMode.value,
       };
 
@@ -147,28 +147,22 @@ class AddEntryController extends GetxController {
         entryData['deadline'] = Timestamp.fromDate(deadlineDate.value!);
       }
 
-      // 🔥 LOGIC BERCABANG: Update vs Create
+      // Branch: Update existing entry vs Create new entry
       if (isEditMode.value && editDocId != null) {
-        // Update data yang udah ada
-        await _firestore
-            .collection('users')
-            .doc(uid)
-            .collection('entries')
+        // Update the existing document
+        await userEntriesRef(_firestore, uid)
             .doc(editDocId)
             .update(entryData);
       } else {
-        // Create data baru (logic yang lama)
+        // Create a new document
         entryData['createdAt'] = FieldValue.serverTimestamp();
-        await _firestore
-            .collection('users')
-            .doc(uid)
-            .collection('entries')
+        await userEntriesRef(_firestore, uid)
             .add(entryData);
       }
 
       HapticFeedback.lightImpact();
 
-      // Bersihin form
+      // Clear form fields
       titleController.clear();
       descController.clear();
       categoryController.clear();
@@ -185,7 +179,7 @@ class AddEntryController extends GetxController {
                   ? 'Task Saved Successfully.'
                   : 'Log Saved Successfully.'),
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.withOpacity(0.8),
+        backgroundColor: Colors.green.withValues(alpha: 0.8),
         colorText: Colors.white,
       );
     } catch (e) {
@@ -200,13 +194,13 @@ class AddEntryController extends GetxController {
       'Oops!',
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.redAccent.withOpacity(0.8),
+      backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
       colorText: Colors.white,
       margin: const EdgeInsets.all(16),
     );
   }
 
-  // Logic buat ngecek apakah user udah mulai ngetik sesuatu
+  /// Whether the user has made any changes to the form.
   bool get hasUnsavedChanges {
     return titleController.text != _initialTitle ||
            descController.text != _initialDesc ||

@@ -7,9 +7,9 @@ class AppColors {
   static const Color tertiary = Color(0xFF4A73D5);   // Indigo/Blue
   static const Color background = Color(0xFF121212); // Deep Charcoal
 
-  // Tambahan wajib buat Dark Mode UI
+  // Essential colors for Dark Mode UI
   static const Color surface = Color(0xFF1E1E1E);    // Base color Card/Glassmorphism
   static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Color(0xFFA0A0A0); // Abu-abu terang subtitel
-  static const Color error = Color(0xFFFF4C4C);      // Merah error
+  static const Color textSecondary = Color(0xFFA0A0A0); // Light gray for subtitles
+  static const Color error = Color(0xFFFF4C4C);      // Red for errors
 }
