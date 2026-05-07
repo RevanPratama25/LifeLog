@@ -3,6 +3,7 @@ import '../controllers/base_controller.dart';
 import '../../home/controllers/home_controller.dart';
 import '../../timeline/controllers/timeline_controller.dart';
 import '../../tasks/controllers/tasks_controller.dart';
+import '../../reflections/controllers/reflections_controller.dart';
 
 
 class BaseBinding extends Bindings {
@@ -12,5 +13,6 @@ class BaseBinding extends Bindings {
     Get.lazyPut<HomeController>(() => HomeController());
     Get.lazyPut<TimelineController>(() => TimelineController());
     Get.lazyPut<TaskController>(() => TaskController());
+    Get.lazyPut<ReflectionController>(() => ReflectionController());
   }
 }

@@ -1,30 +1,39 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class ReflectionsController extends GetxController {
-  final selectedCategory = 'ALL LOGS'.obs;
+class ReflectionController extends GetxController {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  final allLogs = [
-    {
-      'title': 'Completed Deep Work Sprint: Neural Architecture',
-      'content': 'Finally cracked the core logic for the feedback loop. Felt a strange sense of clarity after the third hour. Remember to keep the focus narrow next time; the periphery is just noise.',
-      'category': 'GROWTH',
-      'date': 'OCT 24, 2023',
-    },
-    {
-      'title': 'Early Morning Trail Run',
-      'content': 'The fog was thick at the summit. Running through the silence reminded me why I do this. Physical strain is the only thing that quiets the mental chatter. Pace was consistent at 5:12.',
-      'category': 'HEALTH',
-      'date': 'OCT 23, 2023',
-    },
-    {
-      'title': 'Weekend Digital Detox Reflection',
-      'content': '48 hours without a screen. The first few hours were twitchy, but by Sunday afternoon, I was reading a physical book without checking my phone once. Need to make this a bi-weekly ritual.',
-      'category': 'PERSONAL',
-      'date': 'OCT 21, 2023',
-    },
-  ];
+  // Stream untuk narik semua data (urut dari terbaru)
+  Stream<QuerySnapshot> get entriesStream => _firestore
+      .collection('users')
+      .doc(_auth.currentUser!.uid)
+      .collection('entries')
+      .orderBy('createdAt', descending: true)
+      .snapshots();
 
-  void setCategory(String cat) {
-    selectedCategory.value = cat;
+      // 🔥 Fungsi Hapus Data
+  Future<void> deleteEntry(String docId) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_auth.currentUser!.uid)
+          .collection('entries')
+          .doc(docId)
+          .delete();
+          
+      // Tutup bottom sheet kalau lagi kebuka
+      if (Get.isBottomSheetOpen == true) {
+        Get.back(); 
+      }
+      
+      Get.snackbar('Terhapus', 'Insight berhasil dihapus.',
+          backgroundColor: Colors.redAccent.withValues(alpha: 0.8), colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal menghapus data: $e');
+    }
   }
 }

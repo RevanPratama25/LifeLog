@@ -76,8 +76,9 @@ class TaskView extends GetView<TaskController> {
       return StreamBuilder<QuerySnapshot>(
         stream: stream,
         builder: (context, snapshot) {
-          if (snapshot.hasError)
+          if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
+          }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(color: AppColors.primary),

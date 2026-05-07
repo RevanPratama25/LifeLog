@@ -16,6 +16,13 @@ class AddEntryController extends GetxController {
   final categoryController = TextEditingController();
   final noteController = TextEditingController();
 
+  String _initialTitle = '';
+  String _initialDesc = '';
+  String _initialCategory = '';
+  String _initialNote = '';
+  bool _initialIsTaskMode = true;
+  DateTime? _initialDeadline;
+
   final deadlineDate = Rx<DateTime?>(null);
 
   // Inisialisasi Firestore & Auth
@@ -46,6 +53,7 @@ class AddEntryController extends GetxController {
         descController.text = data['description']?.toString() ?? '';
         categoryController.text = data['category']?.toString() ?? '';
         noteController.text = data['note']?.toString() ?? '';
+        
         // If the data is completed (isDone: true), force it open as Log (false).
         // If not completed yet, follow the original status.
         isTaskMode.value = data['isDone'] == true
@@ -57,6 +65,14 @@ class AddEntryController extends GetxController {
         }
       }
     }
+
+    // 🔥 PINDAH KE SINI: REKAM KONDISI AWAL SETELAH SEMUA DATA DIISI
+    _initialTitle = titleController.text;
+    _initialDesc = descController.text;
+    _initialCategory = categoryController.text;
+    _initialNote = noteController.text;
+    _initialIsTaskMode = isTaskMode.value;
+    _initialDeadline = deadlineDate.value;
   }
 
   void toggleMode(bool isTask) {
@@ -191,12 +207,14 @@ class AddEntryController extends GetxController {
   }
 
   // Logic buat ngecek apakah user udah mulai ngetik sesuatu
-  bool get isFormDirty =>
-      titleController.text.isNotEmpty ||
-      categoryController.text.isNotEmpty ||
-      descController.text.isNotEmpty ||
-      noteController.text.isNotEmpty ||
-      deadlineDate.value != null;
+  bool get hasUnsavedChanges {
+    return titleController.text != _initialTitle ||
+           descController.text != _initialDesc ||
+           categoryController.text != _initialCategory ||
+           noteController.text != _initialNote ||
+           isTaskMode.value != _initialIsTaskMode ||
+           deadlineDate.value != _initialDeadline;
+  }
 
   @override
   void onClose() {

@@ -15,9 +15,29 @@ class AddEntryView extends GetView<AddEntryController> {
         if (didPop) return; // Kalau udah pop, jangan lakukan apa-apa
 
         // Cek apakah form ada isinya
-        if (controller.isFormDirty) {
-          // Tampilkan dialog konfirmasi
-          _showExitConfirmation();
+        if (controller.hasUnsavedChanges) {
+          final confirm = await Get.dialog<bool>(
+            AlertDialog(
+              title: const Text('Hold On!'),
+              content: const Text(
+                  'You have unsaved changes. Are you sure you want to exit?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Get.back(result: false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Get.back(result: true),
+                  child: const Text('Exit'),
+                ),
+              ],
+            ),
+          );
+          
+          // Jika user memilih Exit (true), lanjutkan pop
+          if (confirm == true) {
+            Get.back();
+          }
         } else {
           // Kalau kosong, langsung balik
           Get.back();
