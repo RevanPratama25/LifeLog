@@ -4,12 +4,32 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/utils/firestore_helpers.dart';
 
-class TaskController extends GetxController {
+class TaskController extends GetxController with GetSingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Category filter state
   final selectedCategory = 'ALL'.obs;
+
+  // Tab Controller (Active/Completed)
+  late TabController tabController;
+
+  @override
+  void onInit() {
+    super.onInit();
+    tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void onClose() {
+    tabController.dispose();
+    super.onClose();
+  }
+
+  void switchToCompletedTab() {
+    // Pindah ke tab index 1 (Completed Logs) dengan animasi
+    tabController.animateTo(1); 
+  }
 
   void setCategory(String category) {
     selectedCategory.value = category;
@@ -66,12 +86,6 @@ class TaskController extends GetxController {
     }
   }
 
-  @override
-  void onClose() {
-    completionNoteController.dispose();
-    super.onClose();
-  }
-
   /// Deletes an entry from Firestore.
   Future<void> deleteTask(String docId) async {
     try {
@@ -85,5 +99,4 @@ class TaskController extends GetxController {
       Get.snackbar('Error', 'Failed to delete: $e');
     }
   }
-  
 }

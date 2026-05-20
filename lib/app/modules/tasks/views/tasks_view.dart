@@ -10,58 +10,51 @@ class TaskView extends GetView<TaskController> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Row(
-            children: [
-              const Icon(
-                Icons.bubble_chart,
-                color: AppColors.primary,
-                size: 28,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'LIFELOG',
-                style: Get.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ],
-          ),
-          bottom: TabBar(
-            indicatorColor: AppColors.primary,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: Colors.white54,
-            tabs: const [
-              Tab(text: 'ACTIVE TASKS'),
-              Tab(text: 'COMPLETED LOGS'),
-            ],
-          ),
-          actions: [
-            Obx(
-              () => IconButton(
-                icon: Icon(
-                  controller.isDescending.value
-                      ? Icons.sort_rounded
-                      : Icons.filter_list_alt,
-                  color: AppColors.primary,
-                ),
-                onPressed: () => controller.toggleSort(),
-              ),
+    // 🔥 1. HAPUS DefaultTabController, langsung balikin Scaffold
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Row(
+          children: [
+            const Icon(Icons.bubble_chart, color: AppColors.primary, size: 28),
+            const SizedBox(width: 8),
+            Text(
+              'LIFELOG',
+              style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.5),
             ),
           ],
         ),
-        body: TabBarView(
-          children: [
-            _buildDataList(isTaskList: true),
-            _buildDataList(isTaskList: false),
+        bottom: TabBar(
+          // 2. PASANG controller GetX kita ke sini
+          controller: controller.tabController, 
+          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: Colors.white54,
+          tabs: const [
+            Tab(text: 'ACTIVE TASKS'),
+            Tab(text: 'COMPLETED LOGS'),
           ],
         ),
+        actions: [
+          Obx(
+            () => IconButton(
+              icon: Icon(
+                controller.isDescending.value ? Icons.sort_rounded : Icons.filter_list_alt,
+                color: AppColors.primary,
+              ),
+              onPressed: () => controller.toggleSort(),
+            ),
+          ),
+        ],
+      ),
+      body: TabBarView(
+        // 3. PASANG controller GetX kita juga ke sini
+        controller: controller.tabController, 
+        children: [
+          _buildDataList(isTaskList: true),
+          _buildDataList(isTaskList: false),
+        ],
       ),
     );
   }
