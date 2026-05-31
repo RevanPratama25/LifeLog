@@ -55,7 +55,7 @@ class AuthController extends GetxController {
       );
       
       // On success, navigate to the main dashboard
-      Get.offAllNamed(Routes.BASE);
+      Get.offAllNamed(Routes.base);
       
     } on FirebaseAuthException catch (e) {
       // Handle Firebase-specific auth errors
@@ -108,7 +108,7 @@ class AuthController extends GetxController {
       await userCredential.user?.updateDisplayName(name);
 
       // On success, navigate to the main dashboard
-      Get.offAllNamed(Routes.BASE);
+      Get.offAllNamed(Routes.base);
       
     } on FirebaseAuthException catch (e) {
       // Handle Firebase-specific registration errors

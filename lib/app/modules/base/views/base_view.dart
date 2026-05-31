@@ -32,10 +32,10 @@ class BaseView extends GetView<BaseController> {
       onPressed: () {
         if (index == 1) {
           // Tab Tasks: Auto-select Task mode
-          Get.toNamed(Routes.ADD_ENTRY, arguments: {'isTask': true});
+          Get.toNamed(Routes.addEntry, arguments: {'isTask': true});
         } else if (index == 3) {
           // Tab Reflections: Auto-select Log mode
-          Get.toNamed(Routes.ADD_ENTRY, arguments: {'isTask': false});
+          Get.toNamed(Routes.addEntry, arguments: {'isTask': false});
         } else {
           // Dashboard/Timeline: Show selection bottom sheet
           _showEntryOptions();
@@ -61,7 +61,7 @@ class BaseView extends GetView<BaseController> {
               title: const Text('Create New Plan (Task)'),
               onTap: () {
                 Get.back();
-                Get.toNamed(Routes.ADD_ENTRY, arguments: {'isTask': true});
+                Get.toNamed(Routes.addEntry, arguments: {'isTask': true});
               },
             ),
             const Divider(color: Colors.white10),
@@ -70,7 +70,7 @@ class BaseView extends GetView<BaseController> {
               title: const Text('Record New Activity (Log)'),
               onTap: () {
                 Get.back();
-                Get.toNamed(Routes.ADD_ENTRY, arguments: {'isTask': false});
+                Get.toNamed(Routes.addEntry, arguments: {'isTask': false});
               },
             ),
           ],

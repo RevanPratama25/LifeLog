@@ -47,3 +47,4 @@ app.*.map.json
 # Markdown files
 implementation_plan.md
 walkthrough.md
+.aider*

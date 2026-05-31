@@ -5,16 +5,19 @@ import 'firebase_options.dart';
 
 import 'app/routes/app_pages.dart';
 import 'app/core/theme/app_theme.dart';
+import 'app/core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  await Get.putAsync(() => NotificationService().init());
+
   runApp(
     GetMaterialApp(
       title: "LifeLog",
-      initialRoute: AppPages.INITIAL,
+      initialRoute: AppPages.initial,
       getPages: AppPages.routes,
       debugShowCheckedModeBanner: false,
 

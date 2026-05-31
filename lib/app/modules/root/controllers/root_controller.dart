@@ -20,10 +20,10 @@ class RootController extends GetxController {
 
     if (currentUser != null) {
       // If token is still valid, go to Navbar/Home
-      Get.offAllNamed(Routes.BASE);
+      Get.offAllNamed(Routes.base);
     } else {
       // If not logged in or token expired, go to Login page
-      Get.offAllNamed(Routes.LOGIN);
+      Get.offAllNamed(Routes.login);
     }
   }
 }

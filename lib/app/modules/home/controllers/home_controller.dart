@@ -79,8 +79,9 @@ class HomeController extends GetxController {
 
         // 1. Hitung Stats
         if (isTask && !isDone) activeCount++;
-        if (isDone && createdAt != null && createdAt.isAfter(thirtyDaysAgo))
+        if (isDone && createdAt != null && createdAt.isAfter(thirtyDaysAgo)) {
           logsCount++;
+        }
 
         // 2. Filter Upcoming Deadlines
         if (isTask && !isDone && deadline != null) {

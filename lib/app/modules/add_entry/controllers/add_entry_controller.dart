@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/firestore_helpers.dart';
+import '../../../core/services/notification_service.dart';
 
 class AddEntryController extends GetxController {
   final isTaskMode = true.obs;
@@ -56,7 +56,7 @@ class AddEntryController extends GetxController {
         descController.text = data['description']?.toString() ?? '';
         categoryController.text = data['category']?.toString() ?? '';
         noteController.text = data['note']?.toString() ?? '';
-        
+
         // If completed (isDone: true), open as Log mode.
         // Otherwise, follow the original task/log status.
         isTaskMode.value = data['isDone'] == true
@@ -82,19 +82,21 @@ class AddEntryController extends GetxController {
     isTaskMode.value = isTask;
   }
 
-  Future<void> pickDate() async {
-    DateTime? picked = await showDatePicker(
-      context: Get.context!,
+  Future<void> pickDeadline(BuildContext context) async {
+    // 1. Pilih Tanggal Dulu
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
       initialDate: deadlineDate.value ?? DateTime.now(),
-      firstDate: DateTime.now(), // Can't pick past dates
-      lastDate: DateTime(2030),
+      firstDate: DateTime.now(), // Nggak bisa milih tanggal masa lalu
+      lastDate: DateTime(DateTime.now().year + 5), // Maksimal 5 tahun ke depan
       builder: (context, child) {
+        // Biar pop-up kalendernya ngikutin tema dark/teal lu
         return Theme(
-          data: ThemeData.dark().copyWith(
+          data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
-              onPrimary: Colors.black,
-              surface: AppColors.surface,
+              primary: Colors.teal, // Sesuaikan dengan AppColors.primary lu
+              onPrimary: Colors.white,
+              surface: Color(0xFF1E1E1E), // AppColors.surface
               onSurface: Colors.white,
             ),
           ),
@@ -103,9 +105,43 @@ class AddEntryController extends GetxController {
       },
     );
 
-    if (picked != null) {
-      deadlineDate.value = picked;
-    }
+    // Kalau user klik 'Cancel' di kalender, batalkan proses
+    if (pickedDate == null) return;
+    if (!context.mounted) return;
+
+    // 2. Lanjut Pilih Jam
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: deadlineDate.value != null 
+          ? TimeOfDay.fromDateTime(deadlineDate.value!) 
+          : TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.teal, 
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    // Kalau user klik 'Cancel' di jam, batalkan proses (tanggal nggak jadi disave)
+    if (pickedTime == null) return;
+
+    // 3. Gabungkan Tanggal dan Jam jadi satu objek DateTime
+    final finalDateTime = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    // Update Rx variable lu
+    deadlineDate.value = finalDateTime;
   }
 
   /// Saves or updates the entry in Cloud Firestore.
@@ -130,6 +166,8 @@ class AddEntryController extends GetxController {
 
     try {
       final String uid = _auth.currentUser!.uid;
+      final NotificationService notificationService =
+          Get.find<NotificationService>();
 
       Map<String, dynamic> entryData = {
         'title': title,
@@ -139,25 +177,53 @@ class AddEntryController extends GetxController {
             : category,
         'note': note,
         'isTask': isTaskMode.value,
-        // Log mode = completed (true), Task mode = active (false)
-        'isDone': !isTaskMode.value,
+        'isDone': !isTaskMode.value, // Kalau Log, otomatis Done
       };
 
       if (isTaskMode.value) {
         entryData['deadline'] = Timestamp.fromDate(deadlineDate.value!);
       }
 
+      String currentDocId;
+
       // Branch: Update existing entry vs Create new entry
       if (isEditMode.value && editDocId != null) {
-        // Update the existing document
-        await userEntriesRef(_firestore, uid)
-            .doc(editDocId)
-            .update(entryData);
+        currentDocId = editDocId!;
+        // Update data di Firestore
+        await userEntriesRef(
+          _firestore,
+          uid,
+        ).doc(currentDocId).update(entryData);
+
+        // Cancel notifikasi lama (wajib pakai nama parameter kalau lu update package-nya)
+        await notificationService.cancelReminder(currentDocId.hashCode);
       } else {
-        // Create a new document
+        // Create data baru
         entryData['createdAt'] = FieldValue.serverTimestamp();
-        await userEntriesRef(_firestore, uid)
-            .add(entryData);
+        final docRef = await userEntriesRef(_firestore, uid).add(entryData);
+        currentDocId = docRef.id; // Ambil docId yang baru digenerate Firestore
+      }
+
+      if (isTaskMode.value &&
+          entryData['isDone'] == false &&
+          deadlineDate.value != null) {
+        // Default pengingat: 1 jam sebelum deadline
+        DateTime reminderTime = deadlineDate.value!.subtract(
+          const Duration(hours: 1),
+        );
+
+        // Kalau deadlinenya kurang dari 1 jam dari sekarang, ingetin tepat di waktu deadline aja
+        if (reminderTime.isBefore(DateTime.now())) {
+          reminderTime = deadlineDate.value!;
+        }
+
+        await notificationService.scheduleReminder(
+          id: currentDocId.hashCode,
+          title: '⏳ Task Deadline Alert!',
+          body: 'Hey Revan, your task "$title" is due soon!',
+          scheduledTime: reminderTime,
+          payload: currentDocId, // Bawa docId buat fitur tap notifikasi nanti
+        );
       }
 
       HapticFeedback.lightImpact();
@@ -203,11 +269,11 @@ class AddEntryController extends GetxController {
   /// Whether the user has made any changes to the form.
   bool get hasUnsavedChanges {
     return titleController.text != _initialTitle ||
-           descController.text != _initialDesc ||
-           categoryController.text != _initialCategory ||
-           noteController.text != _initialNote ||
-           isTaskMode.value != _initialIsTaskMode ||
-           deadlineDate.value != _initialDeadline;
+        descController.text != _initialDesc ||
+        categoryController.text != _initialCategory ||
+        noteController.text != _initialNote ||
+        isTaskMode.value != _initialIsTaskMode ||
+        deadlineDate.value != _initialDeadline;
   }
 
   @override

@@ -89,7 +89,7 @@ class AddEntryView extends GetView<AddEntryController> {
               // Dynamic form section based on selected mode
               Obx(
                 () => controller.isTaskMode.value
-                    ? _buildTaskExtras()
+                    ? _buildTaskExtras(context)
                     : _buildLogExtras(),
               ),
 
@@ -206,8 +206,8 @@ class AddEntryView extends GetView<AddEntryController> {
     );
   }
 
-  // Extra fields for Task mode (deadline date picker)
-  Widget _buildTaskExtras() {
+ // Extra fields for Task mode (deadline date picker)
+  Widget _buildTaskExtras(BuildContext context) { // 🔥 Tambahkan parameter context di sini
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -218,15 +218,22 @@ class AddEntryView extends GetView<AddEntryController> {
           ),
         ),
         const SizedBox(height: 8),
-        InkWell(
-          onTap: controller.pickDate,
+        // 🔥 Obx dipindah ke luar InkWell biar lebih stabil nangkep UI update
+        Obx(() => InkWell(
+          // 🔥 PERBAIKAN UTAMA: Tambahkan (context) agar fungsi tereksekusi
+          onTap: () => controller.pickDeadline(context), 
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.transparent),
+              border: Border.all(
+                // Biar ada efek visual kalau udah diisi vs belum diisi
+                color: controller.deadlineDate.value == null 
+                    ? Colors.transparent 
+                    : AppColors.primary.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: [
@@ -236,25 +243,22 @@ class AddEntryView extends GetView<AddEntryController> {
                   size: 20,
                 ),
                 const SizedBox(width: 12),
-                Obx(
-                  () => Text(
-                    controller.deadlineDate.value == null
-                        ? 'Pick a Date'
-                        : DateFormat(
-                            'dd MMMM yyyy',
-                          ).format(controller.deadlineDate.value!),
-                    style: TextStyle(
-                      color: controller.deadlineDate.value == null
-                          ? AppColors.textSecondary
-                          : Colors.white,
-                      fontSize: 16,
-                    ),
+                Text(
+                  controller.deadlineDate.value == null
+                      ? 'Deadline Time'
+                      : DateFormat('dd MMMM yyyy, HH:mm')
+                          .format(controller.deadlineDate.value!),
+                  style: TextStyle(
+                    color: controller.deadlineDate.value == null
+                        ? AppColors.textSecondary
+                        : Colors.white,
+                    fontSize: 16,
                   ),
                 ),
               ],
             ),
           ),
-        ),
+        )),
       ],
     );
   }

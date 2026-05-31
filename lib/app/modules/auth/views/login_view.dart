@@ -163,7 +163,7 @@ class LoginView extends GetView<AuthController> {
                   ),
                   GestureDetector(
                     onTap: () => Get.toNamed(
-                      Routes.REGISTER,
+                      Routes.register,
                     ),
                     child: const Text(
                       'Register here',

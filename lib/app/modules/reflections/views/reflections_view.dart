@@ -115,7 +115,7 @@ class ReflectionView extends GetView<ReflectionController> {
                         Get.back();
                         await Future.delayed(const Duration(milliseconds: 150));
 
-                        Get.toNamed(Routes.ADD_ENTRY, arguments: { 
+                        Get.toNamed(Routes.addEntry, arguments: { 
                           'isEdit': true,
                           'docId': docId,
                           'data': data,

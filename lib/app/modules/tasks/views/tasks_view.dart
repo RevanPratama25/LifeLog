@@ -450,7 +450,7 @@ class TaskView extends GetView<TaskController> {
                       Get.back();
                       // Navigate to AddEntry in edit mode
                       Get.toNamed(
-                        Routes.ADD_ENTRY,
+                        Routes.addEntry,
                         arguments: {
                           'isEdit': true,
                           'docId': docId,
