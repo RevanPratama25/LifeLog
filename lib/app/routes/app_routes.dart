@@ -3,33 +3,33 @@ part of 'app_pages.dart';
 abstract class Routes {
   Routes._();
   
-  // Route constants used in navigation, e.g. Get.toNamed(Routes.HOME);
-  static const ROOT = _Paths.ROOT;
-  static const BASE = _Paths.BASE;
-  static const HOME = _Paths.HOME;
-  static const LOGIN = _Paths.LOGIN;
-  static const REGISTER = _Paths.REGISTER;
-  static const TASK = _Paths.TASK;
-  static const LOG = _Paths.LOG;
-  static const ADD_ENTRY = _Paths.ADD_ENTRY;
-  static const TIMELINE = _Paths.TIMELINE;
-  static const REFLECTIONS = _Paths.REFLECTIONS;
-  static const INITIAL = _Paths.INITIAL;
+  // Route constants used in navigation, e.g. Get.toNamed(Routes.home);
+  static const root = _Paths.root;
+  static const base = _Paths.base;
+  static const home = _Paths.home;
+  static const login = _Paths.login;
+  static const register = _Paths.register;
+  static const task = _Paths.task;
+  static const log = _Paths.log;
+  static const addEntry = _Paths.addEntry;
+  static const timeline = _Paths.timeline;
+  static const reflections = _Paths.reflections;
+  static const initial = _Paths.initial;
 }
 
 abstract class _Paths {
   _Paths._();
   
   // URL path definitions
-  static const ROOT = '/root';
-  static const BASE = '/base';
-  static const HOME = '/home';
-  static const LOGIN = '/login';
-  static const REGISTER = '/register';
-  static const TASK = '/task';
-  static const LOG = '/log';
-  static const ADD_ENTRY = '/add_entry';
-  static const TIMELINE = '/timeline';
-  static const REFLECTIONS = '/reflections';
-  static const INITIAL = '/initial';
+  static const root = '/root';
+  static const base = '/base';
+  static const home = '/home';
+  static const login = '/login';
+  static const register = '/register';
+  static const task = '/task';
+  static const log = '/log';
+  static const addEntry = '/add_entry';
+  static const timeline = '/timeline';
+  static const reflections = '/reflections';
+  static const initial = '/initial';
 }

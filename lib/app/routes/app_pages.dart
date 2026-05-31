@@ -39,62 +39,62 @@ class AppPages {
   AppPages._();
 
   // First page displayed when the app launches
-  static const INITIAL = Routes.ROOT;
+  static const initial = Routes.root;
 
   static final routes = [
     GetPage(
-      name: _Paths.ROOT,
+      name: _Paths.root,
       page: () => const RootView(),
       binding: RootBinding(),
       transition: Transition.fadeIn,
     ),
 
     GetPage(
-      name: _Paths.BASE,
+      name: _Paths.base,
       page: () => const BaseView(),
       binding: BaseBinding(),
       transition: Transition.fadeIn,
     ),
 
     GetPage(
-      name: _Paths.HOME,
+      name: _Paths.home,
       page: () => const HomeView(),
       binding: HomeBinding(),
       transition: Transition.fadeIn,
     ),
 
     GetPage(
-      name: _Paths.ADD_ENTRY,
+      name: _Paths.addEntry,
       page: () => const AddEntryView(),
       binding: AddEntryBinding(),
     ),
 
     GetPage(
-      name: _Paths.TIMELINE,
+      name: _Paths.timeline,
       page: () => const TimelineView(),
       binding: TimelineBinding(),
     ),
 
     GetPage(
-      name: _Paths.LOGIN,
+      name: _Paths.login,
       page: () => const LoginView(),
       binding: AuthBinding(),
     ),
 
     GetPage(
-      name: _Paths.REGISTER,
+      name: _Paths.register,
       page: () => const RegisterView(),
       binding: AuthBinding(),
     ),
 
     GetPage(
-      name: _Paths.TASK,
+      name: _Paths.task,
       page: () => const TaskView(),
       binding: TaskBinding(),
     ),
 
     GetPage(
-      name: _Paths.REFLECTIONS,
+      name: _Paths.reflections,
       page: () => const ReflectionView(),
       binding: ReflectionsBinding(),
     ),

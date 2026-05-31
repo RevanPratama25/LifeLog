@@ -590,7 +590,7 @@ class TimelineView extends GetView<TimelineController> {
                         Get.back();
                         // Navigate to edit form
                         Get.toNamed(
-                          Routes.ADD_ENTRY,
+                          Routes.addEntry,
                           arguments: {
                             'isEdit': true,
                             'docId': docId,
