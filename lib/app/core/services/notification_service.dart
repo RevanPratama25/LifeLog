@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:get/get.dart';
+import 'dart:io';
 
 class NotificationService extends GetxService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -35,6 +36,17 @@ class NotificationService extends GetxService {
         debugPrint('Notifikasi diklik! Payload: ${response.payload}'); 
       },
     );
+    if (Platform.isAndroid) {
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      // Minta izin untuk memunculkan notifikasi
+      await androidImplementation?.requestNotificationsPermission();
+      
+      // Minta izin untuk menjadwalkan alarm yang tepat
+      await androidImplementation?.requestExactAlarmsPermission();
+    }
 
     return this;
   }

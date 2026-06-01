@@ -204,28 +204,18 @@ class AddEntryController extends GetxController {
         currentDocId = docRef.id; // Ambil docId yang baru digenerate Firestore
       }
 
-      if (isTaskMode.value &&
-          entryData['isDone'] == false &&
-          deadlineDate.value != null) {
-        // Default pengingat: 1 jam sebelum deadline
-        DateTime reminderTime = deadlineDate.value!.subtract(
-          const Duration(hours: 1),
-        );
-
-        // Kalau deadlinenya kurang dari 1 jam dari sekarang, ingetin tepat di waktu deadline aja
-        if (reminderTime.isBefore(DateTime.now())) {
-          reminderTime = deadlineDate.value!;
-        }
+      if (isTaskMode.value && entryData['isDone'] == false && deadlineDate.value != null) {
+        // 🔥 TESTING MODE: Jadwalkan notifikasi 10 detik dari sekarang
+        DateTime reminderTime = DateTime.now().add(const Duration(seconds: 10));
 
         await notificationService.scheduleReminder(
           id: currentDocId.hashCode,
           title: '⏳ Task Deadline Alert!',
           body: 'Hey Revan, your task "$title" is due soon!',
           scheduledTime: reminderTime,
-          payload: currentDocId, // Bawa docId buat fitur tap notifikasi nanti
+          payload: currentDocId,
         );
       }
-
       HapticFeedback.lightImpact();
 
       // Clear form fields
