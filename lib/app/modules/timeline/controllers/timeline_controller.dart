@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/utils/firestore_helpers.dart';
+import '../../../core/services/notification_service.dart';
 
 class TimelineController extends GetxController {
   // Search query state
@@ -54,6 +55,9 @@ class TimelineController extends GetxController {
           .doc(docId)
           .update(updateData);
 
+      // Cancel scheduled reminder
+      await Get.find<NotificationService>().cancelTaskReminders(docId);
+
       // Clear form and close bottom sheet
       completionNoteController.clear();
       Get.back();
@@ -82,6 +86,9 @@ class TimelineController extends GetxController {
       await userEntriesRef(_firestore, _auth.currentUser!.uid)
           .doc(docId)
           .delete();
+
+      // Cancel scheduled reminder
+      await Get.find<NotificationService>().cancelTaskReminders(docId);
 
       if (Get.isBottomSheetOpen == true) {
         Get.back();

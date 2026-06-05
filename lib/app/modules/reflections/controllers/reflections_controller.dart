@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/firestore_helpers.dart';
+import '../../../core/services/notification_service.dart';
 
 class ReflectionController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -20,6 +21,9 @@ class ReflectionController extends GetxController {
       await userEntriesRef(_firestore, _auth.currentUser!.uid)
           .doc(docId)
           .delete();
+          
+      // Cancel scheduled reminder in case it was a task
+      await Get.find<NotificationService>().cancelTaskReminders(docId);
           
       // Close bottom sheet if open
       if (Get.isBottomSheetOpen == true) {

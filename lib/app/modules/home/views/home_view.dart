@@ -83,6 +83,11 @@ class HomeView extends GetView<HomeController> {
             ),
           ],
         ),
+        IconButton(
+          icon: const Icon(Icons.notifications_active, color: AppColors.primary),
+          onPressed: () => controller.showPendingNotifications(),
+          tooltip: 'Pending Reminders',
+        ),
       ],
     );
   }

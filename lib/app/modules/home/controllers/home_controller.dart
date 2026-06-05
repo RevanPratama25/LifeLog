@@ -4,6 +4,9 @@ import 'package:get/get.dart';
 import '../../../core/utils/firestore_helpers.dart';
 import '../../base/controllers/base_controller.dart';
 import '../../tasks/controllers/tasks_controller.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/services/notification_service.dart';
+import 'package:flutter/material.dart';
 
 class HomeController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -181,5 +184,50 @@ class HomeController extends GetxController {
     if (Get.isRegistered<TaskController>()) {
       Get.find<TaskController>().switchToCompletedTab();
     }
+  }
+
+  Future<void> showPendingNotifications() async {
+    final notificationService = Get.find<NotificationService>();
+    final pendingRequests = await notificationService.getPendingNotifications();
+    
+    Get.bottomSheet(
+      Container(
+        constraints: BoxConstraints(maxHeight: Get.height * 0.7),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Pending Reminders',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            if (pendingRequests.isEmpty)
+              const Text('No pending reminders.', style: TextStyle(color: Colors.white54))
+            else
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: pendingRequests.length,
+                  itemBuilder: (context, index) {
+                    final req = pendingRequests[index];
+                    return ListTile(
+                      leading: const Icon(Icons.notifications_active, color: AppColors.primary),
+                      title: Text(req.title ?? 'Reminder', style: const TextStyle(color: Colors.white)),
+                      subtitle: Text(req.body ?? '', style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
   }
 }
