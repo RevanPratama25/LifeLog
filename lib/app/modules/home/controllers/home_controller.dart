@@ -18,11 +18,14 @@ class HomeController extends GetxController {
 
   //Variabel Streak & Week Completion
   final currentStreak = 0.obs;
-  final weekCompletion = List.filled(7, false).obs;
+  final bestStreak = 0.obs;
 
   // Rx variables untuk menampung hitungan
   final activeTasksCount = 0.obs;
   final totalLogsCount = 0.obs;
+
+  // Rx variable untuk menampung tanggal aktif untuk visualisasi streak
+  final activeDatesList = <String>[].obs;
 
   // Rx variables baru untuk nampung data list
   final upcomingDeadlines = <QueryDocumentSnapshot>[].obs;
@@ -100,24 +103,6 @@ class HomeController extends GetxController {
         }
       }
 
-      // LOGIKA MINGGU INI (Senin - Minggu)
-      // weekday: 1 = Senin, 7 = Minggu
-      final currentWeekday = now.weekday;
-      final startOfWeek = today.subtract(Duration(days: currentWeekday - 1));
-
-      List<bool> tempWeekCompletion = List.filled(7, false);
-      for (int i = 0; i < 7; i++) {
-        final dayToCheck = startOfWeek.add(Duration(days: i));
-        final dateString =
-            "${dayToCheck.year}-${dayToCheck.month.toString().padLeft(2, '0')}-${dayToCheck.day.toString().padLeft(2, '0')}";
-
-        // Kalau tanggal itu ada di activeDates, berarti true
-        if (activeDates.contains(dateString)) {
-          tempWeekCompletion[i] = true;
-        }
-      }
-      weekCompletion.assignAll(tempWeekCompletion);
-
       //LOGIKA TOTAL STREAK (Hitung mundur dari hari ini atau kemarin)
       int streak = 0;
       DateTime checkDate = today;
@@ -138,6 +123,33 @@ class HomeController extends GetxController {
         }
       }
       currentStreak.value = streak;
+
+      // LOGIKA BEST STREAK
+      int maxStreak = 0;
+      int tempStreak = 0;
+      DateTime? prevDate;
+      
+      final sortedDates = activeDates.toList()..sort();
+      for (var dateStr in sortedDates) {
+        final parts = dateStr.split('-');
+        final d = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+        
+        if (prevDate == null) {
+          tempStreak = 1;
+        } else {
+          final diff = d.difference(prevDate).inDays;
+          if (diff == 1) {
+            tempStreak++;
+          } else if (diff > 1) {
+            tempStreak = 1;
+          }
+        }
+        if (tempStreak > maxStreak) {
+          maxStreak = tempStreak;
+        }
+        prevDate = d;
+      }
+      bestStreak.value = maxStreak;
 
       // Sorting (sama kayak sebelumnya)
       tempUpcoming.sort(
@@ -164,6 +176,7 @@ class HomeController extends GetxController {
       activeTasksCount.value = activeCount;
       totalLogsCount.value = logsCount;
       todayMomentum.value = todayMomentumCount;
+      activeDatesList.assignAll(sortedDates);
       upcomingDeadlines.assignAll(tempUpcoming.take(5).toList());
       recentInsights.assignAll(tempInsights.take(5).toList());
     });

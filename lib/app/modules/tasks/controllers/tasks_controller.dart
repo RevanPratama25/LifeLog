@@ -12,6 +12,10 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
   // Category filter state
   final selectedCategory = 'ALL'.obs;
 
+  // Search filter state
+  final searchQuery = ''.obs;
+  final searchController = TextEditingController();
+
   // Tab Controller (Active/Completed)
   late TabController tabController;
 
@@ -19,10 +23,14 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
   void onInit() {
     super.onInit();
     tabController = TabController(length: 2, vsync: this);
+    searchController.addListener(() {
+      searchQuery.value = searchController.text;
+    });
   }
 
   @override
   void onClose() {
+    searchController.dispose();
     tabController.dispose();
     super.onClose();
   }

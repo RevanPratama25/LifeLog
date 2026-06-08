@@ -9,6 +9,9 @@ class ReflectionController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // Selected folder state
+  final selectedFolder = RxnString(null);
+
   // Stream for all entries, ordered by most recent first
   Stream<QuerySnapshot> get entriesStream =>
       userEntriesRef(_firestore, _auth.currentUser!.uid)

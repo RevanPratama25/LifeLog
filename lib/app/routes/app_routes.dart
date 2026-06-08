@@ -15,6 +15,7 @@ abstract class Routes {
   static const timeline = _Paths.timeline;
   static const reflections = _Paths.reflections;
   static const initial = _Paths.initial;
+  static const editProfile = _Paths.editProfile;
 }
 
 abstract class _Paths {
@@ -32,4 +33,5 @@ abstract class _Paths {
   static const timeline = '/timeline';
   static const reflections = '/reflections';
   static const initial = '/initial';
+  static const editProfile = '/edit_profile';
 }

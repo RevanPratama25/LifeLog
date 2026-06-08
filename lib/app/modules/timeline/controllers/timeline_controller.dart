@@ -10,6 +10,13 @@ class TimelineController extends GetxController {
   final searchQuery = ''.obs;
   final searchController = TextEditingController();
 
+  // Category & Sort State
+  final selectedCategory = 'ALL'.obs;
+  final isDescending = true.obs;
+
+  void toggleSort() => isDescending.toggle();
+  void setCategory(String category) => selectedCategory.value = category;
+
   @override
   void onInit() {
     super.onInit();
@@ -34,7 +41,7 @@ class TimelineController extends GetxController {
   // Real-time stream of all entries, ordered by most recent first
   Stream<QuerySnapshot> get entriesStream =>
       userEntriesRef(_firestore, _auth.currentUser!.uid)
-          .orderBy('createdAt', descending: true)
+          .orderBy('createdAt', descending: isDescending.value)
           .snapshots();
 
 

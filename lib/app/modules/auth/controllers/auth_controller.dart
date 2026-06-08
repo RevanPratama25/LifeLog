@@ -13,6 +13,15 @@ class AuthController extends GetxController {
 
   // Firebase Auth instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  // Observable for current user
+  Rx<User?> currentUser = Rx<User?>(null);
+
+  @override
+  void onInit() {
+    super.onInit();
+    currentUser.bindStream(_auth.authStateChanges());
+  }
 
   void togglePasswordVisibility() {
     isPasswordHidden.value = !isPasswordHidden.value;
@@ -159,6 +168,18 @@ class AuthController extends GetxController {
       _showError('An error occurred: $e');
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Signs out the current user.
+  void logout() async {
+    emailController.clear();
+    passwordController.clear();
+    try {
+      await _auth.signOut();
+      Get.offAllNamed(Routes.login);
+    } catch (e) {
+      _showError('Failed to logout: $e');
     }
   }
 
