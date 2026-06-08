@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../controllers/add_entry_controller.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/constants/alarm_sound_registry.dart';
 import '../../../core/widgets/custom_text_field.dart';
 
 class AddEntryView extends GetView<AddEntryController> {
@@ -259,6 +260,86 @@ class AddEntryView extends GetView<AddEntryController> {
             ),
           ),
         )),
+        const SizedBox(height: 24),
+        Text(
+          'Reminders',
+          style: Get.textTheme.labelLarge?.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Obx(() {
+          final options = {
+            'at_deadline': 'At deadline',
+            '30_min': '30 mins before',
+            '1_hour': '1 hour before',
+            '3_hours': '3 hours before',
+            '5_hours': '5 hours before',
+            '12_hours': '12 hours before',
+            '1_day': '1 day before',
+            '3_days': '3 days before',
+            '7_days': '7 days before',
+          };
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: options.entries.map((entry) {
+              final isSelected = controller.selectedReminders.contains(entry.key);
+              return FilterChip(
+                label: Text(entry.value),
+                selected: isSelected,
+                onSelected: (_) => controller.toggleReminder(entry.key),
+                selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                checkmarkColor: AppColors.primary,
+                labelStyle: TextStyle(
+                  color: isSelected ? AppColors.primary : Colors.white70,
+                ),
+              );
+            }).toList(),
+          );
+        }),
+        const SizedBox(height: 24),
+        Obx(() => SwitchListTile(
+          title: const Text('Enable Alarm'),
+          subtitle: const Text('Play a loud alarm sound when the reminder triggers'),
+          value: controller.enableAlarm.value,
+          onChanged: (val) => controller.enableAlarm.value = val,
+          activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
+          activeThumbColor: AppColors.primary,
+          contentPadding: EdgeInsets.zero,
+        )),
+        Obx(() {
+          if (!controller.enableAlarm.value) return const SizedBox.shrink();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              Text(
+                'Alarm Sound',
+                style: Get.textTheme.labelLarge?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...AlarmSoundRegistry.availableSounds.map((sound) {
+                // ignore: deprecated_member_use
+                return RadioListTile<String>(
+                  title: Text(AlarmSoundRegistry.getDisplayName(sound), style: const TextStyle(color: Colors.white)),
+                  value: sound,
+                  // ignore: deprecated_member_use
+                  groupValue: controller.alarmSound.value,
+                  // ignore: deprecated_member_use
+                  onChanged: (val) {
+                    if (val != null) controller.alarmSound.value = val;
+                  },
+                  activeColor: AppColors.primary,
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                );
+              }),
+            ],
+          );
+        }),
       ],
     );
   }

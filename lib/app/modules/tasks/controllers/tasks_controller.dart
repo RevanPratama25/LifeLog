@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/utils/firestore_helpers.dart';
+import '../../../core/services/notification_service.dart';
 
 class TaskController extends GetxController with GetSingleTickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -11,6 +12,10 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
   // Category filter state
   final selectedCategory = 'ALL'.obs;
 
+  // Search filter state
+  final searchQuery = ''.obs;
+  final searchController = TextEditingController();
+
   // Tab Controller (Active/Completed)
   late TabController tabController;
 
@@ -18,10 +23,14 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
   void onInit() {
     super.onInit();
     tabController = TabController(length: 2, vsync: this);
+    searchController.addListener(() {
+      searchQuery.value = searchController.text;
+    });
   }
 
   @override
   void onClose() {
+    searchController.dispose();
     tabController.dispose();
     super.onClose();
   }
@@ -75,6 +84,9 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
           .doc(docId)
           .update(updateData);
           
+      // Cancel scheduled reminder
+      await Get.find<NotificationService>().cancelTaskReminders(docId);
+
       // Clear form and close bottom sheet
       completionNoteController.clear();
       Get.back();
@@ -92,6 +104,10 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
       await userEntriesRef(_firestore, _auth.currentUser!.uid)
           .doc(docId)
           .delete();
+
+      // Cancel scheduled reminder
+      await Get.find<NotificationService>().cancelTaskReminders(docId);
+
       Get.back();
       Get.snackbar('Deleted', 'Entry deleted successfully.',
           backgroundColor: Colors.redAccent.withValues(alpha: 0.8), colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);

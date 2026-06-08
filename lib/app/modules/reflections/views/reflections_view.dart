@@ -84,8 +84,9 @@ class ReflectionView extends GetView<ReflectionController> {
                 title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Georgia', // Serif font for premium feel
                 ),
               ),
               const SizedBox(height: 16),
@@ -96,9 +97,10 @@ class ReflectionView extends GetView<ReflectionController> {
                 note,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
-                  height: 1.6,
+                  fontSize: 18,
+                  height: 1.8,
                   letterSpacing: 0.5,
+                  fontFamily: 'Georgia', // Serif font for readability
                 ),
               ),
 
@@ -171,15 +173,8 @@ class ReflectionView extends GetView<ReflectionController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Reflections',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: StreamBuilder<QuerySnapshot>(
+      body: SafeArea(
+        child: StreamBuilder<QuerySnapshot>(
         stream: controller.entriesStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -222,77 +217,98 @@ class ReflectionView extends GetView<ReflectionController> {
             groupedNotes[category]!.add(doc);
           }
 
-          // 3. Render the grouped UI
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            itemCount: groupedNotes.length,
-            itemBuilder: (context, index) {
-              final category = groupedNotes.keys.elementAt(index);
-              final notesList = groupedNotes[category]!;
+          // 3. Render the UI based on selected folder state
+          return Obx(() {
+            final selectedFolder = controller.selectedFolder.value;
 
+            if (selectedFolder == null) {
+              // Show Folder Grid
+              return GridView.builder(
+                padding: const EdgeInsets.all(24),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1.0,
+                ),
+                itemCount: groupedNotes.length,
+                itemBuilder: (context, index) {
+                  final category = groupedNotes.keys.elementAt(index);
+                  final count = groupedNotes[category]!.length;
+                  
+                  return InkWell(
+                    onTap: () => controller.selectedFolder.value = category,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.folder, size: 48, color: AppColors.primary),
+                          const SizedBox(height: 12),
+                          Text(
+                            category,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$count Notes',
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            } else {
+              // Show Notes List for the selected folder
+              final notesList = groupedNotes[selectedFolder] ?? [];
+              
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildCategoryHeader(category, notesList.length),
-                  ...notesList.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    final docId = doc.id;
-                    return _buildQuoteCard(data, docId);
-                  }),
-                  const SizedBox(height: 32),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => controller.selectedFolder.value = null,
+                        ),
+                        Text(
+                          selectedFolder,
+                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 160),
+                      itemCount: notesList.length,
+                      itemBuilder: (context, index) {
+                        final doc = notesList[index];
+                        final data = doc.data() as Map<String, dynamic>;
+                        return _buildQuoteCard(data, doc.id);
+                      },
+                    ),
+                  ),
                 ],
               );
-            },
-          );
+            }
+          });
         },
+      ),
       ),
     );
   }
 
-  // Category header widget
-  Widget _buildCategoryHeader(String category, int count) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.folder_special,
-            color: AppColors.primary,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            category,
-            style: const TextStyle(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(
-                alpha: 0.2,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$count',
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const Expanded(child: Divider(color: Colors.white12, indent: 16)),
-        ],
-      ),
-    );
-  }
 
   // Quote card widget (max 3 lines preview)
   Widget _buildQuoteCard(Map<String, dynamic> data, String docId) {

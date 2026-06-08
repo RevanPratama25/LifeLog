@@ -12,61 +12,49 @@ class TaskView extends GetView<TaskController> {
   Widget build(BuildContext context) {
     // 🔥 1. HAPUS DefaultTabController, langsung balikin Scaffold
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Row(
+      body: SafeArea(
+        child: Column(
           children: [
-            const Icon(Icons.bubble_chart, color: AppColors.primary, size: 28),
-            const SizedBox(width: 8),
-            Text(
-              'LIFELOG',
-              style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.5),
+            TabBar(
+              // 2. PASANG controller GetX kita ke sini
+              controller: controller.tabController, 
+              indicatorColor: AppColors.primary,
+              labelColor: AppColors.primary,
+              unselectedLabelColor: Colors.white54,
+              tabs: const [
+                Tab(text: 'ACTIVE TASKS'),
+                Tab(text: 'COMPLETED LOGS'),
+              ],
             ),
-          ],
-        ),
-        bottom: TabBar(
-          // 2. PASANG controller GetX kita ke sini
-          controller: controller.tabController, 
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.white54,
-          tabs: const [
-            Tab(text: 'ACTIVE TASKS'),
-            Tab(text: 'COMPLETED LOGS'),
-          ],
-        ),
-        actions: [
-          Obx(
-            () => IconButton(
-              icon: Icon(
-                controller.isDescending.value ? Icons.sort_rounded : Icons.filter_list_alt,
-                color: AppColors.primary,
+            Expanded(
+              child: TabBarView(
+                // 3. PASANG controller GetX kita juga ke sini
+                controller: controller.tabController, 
+                children: [
+                  _buildDataList(isTaskList: true),
+                  _buildDataList(isTaskList: false),
+                ],
               ),
-              onPressed: () => controller.toggleSort(),
             ),
-          ),
-        ],
-      ),
-      body: TabBarView(
-        // 3. PASANG controller GetX kita juga ke sini
-        controller: controller.tabController, 
-        children: [
-          _buildDataList(isTaskList: true),
-          _buildDataList(isTaskList: false),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildDataList({required bool isTaskList}) {
-    return Obx(() {
-      final stream = isTaskList
-          ? controller.activeTasksStream
-          : controller.logsStream;
-      final currentCategory = controller.selectedCategory.value;
+    return Column(
+      children: [
+        _buildSearchAndSort(),
+        Expanded(
+          child: Obx(() {
+            final stream = isTaskList
+                ? controller.activeTasksStream
+                : controller.logsStream;
+            final currentCategory = controller.selectedCategory.value;
+            final query = controller.searchQuery.value.toLowerCase();
 
-      return StreamBuilder<QuerySnapshot>(
+            return StreamBuilder<QuerySnapshot>(
         stream: stream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -94,14 +82,19 @@ class TaskView extends GetView<TaskController> {
           }
           final dynamicCategories = uniqueCategories.toList();
 
-          // Filter data by the currently selected category
-          final filteredDocs = currentCategory == 'ALL'
-              ? allDocs
-              : allDocs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  return (data['category']?.toString().toUpperCase() ?? '') ==
-                      currentCategory;
-                }).toList();
+          // Filter data by the currently selected category and search query
+          final filteredDocs = allDocs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final catMatch = currentCategory == 'ALL' ||
+                (data['category']?.toString().toUpperCase() ?? '') ==
+                    currentCategory;
+            
+            final title = data['title']?.toString().toLowerCase() ?? '';
+            final desc = data['description']?.toString().toLowerCase() ?? '';
+            final searchMatch = query.isEmpty || title.contains(query) || desc.contains(query);
+
+            return catMatch && searchMatch;
+          }).toList();
 
           return Column(
             children: [
@@ -121,9 +114,11 @@ class TaskView extends GetView<TaskController> {
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 8,
+                        padding: const EdgeInsets.only(
+                          left: 24,
+                          right: 24,
+                          top: 16,
+                          bottom: 160,
                         ),
                         itemCount: filteredDocs.length,
                         itemBuilder: (context, index) {
@@ -139,7 +134,58 @@ class TaskView extends GetView<TaskController> {
           );
         },
       );
-    });
+    }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchAndSort() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: TextField(
+                controller: controller.searchController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Search tasks...',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Obx(
+            () => Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  controller.isDescending.value ? Icons.sort_rounded : Icons.filter_list_alt,
+                  color: AppColors.primary,
+                ),
+                onPressed: () => controller.toggleSort(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCategoryChips(List<String> categories) {

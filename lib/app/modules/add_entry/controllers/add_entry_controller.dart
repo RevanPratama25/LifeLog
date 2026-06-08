@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import '../../../core/utils/firestore_helpers.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../core/constants/alarm_sound_registry.dart';
 
 class AddEntryController extends GetxController {
   final isTaskMode = true.obs;
@@ -26,8 +27,14 @@ class AddEntryController extends GetxController {
   String _initialNote = '';
   bool _initialIsTaskMode = true;
   DateTime? _initialDeadline;
+  List<String> _initialReminders = ['at_deadline'];
+  bool _initialEnableAlarm = false;
+  String _initialAlarmSound = AlarmSoundRegistry.classic;
 
   final deadlineDate = Rx<DateTime?>(null);
+  final selectedReminders = <String>['at_deadline'].obs;
+  final enableAlarm = false.obs;
+  final alarmSound = AlarmSoundRegistry.classic.obs;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -66,6 +73,20 @@ class AddEntryController extends GetxController {
         if (data['deadline'] != null) {
           deadlineDate.value = (data['deadline'] as Timestamp).toDate();
         }
+
+        if (data['reminders'] != null) {
+          selectedReminders.value = List<String>.from(data['reminders']);
+        } else {
+          selectedReminders.value = ['at_deadline'];
+        }
+
+        enableAlarm.value = data['enableAlarm'] == true;
+        
+        if (data['alarmSound'] != null) {
+          alarmSound.value = data['alarmSound'];
+        } else {
+          alarmSound.value = AlarmSoundRegistry.classic;
+        }
       }
     }
 
@@ -76,10 +97,21 @@ class AddEntryController extends GetxController {
     _initialNote = noteController.text;
     _initialIsTaskMode = isTaskMode.value;
     _initialDeadline = deadlineDate.value;
+    _initialReminders = List<String>.from(selectedReminders);
+    _initialEnableAlarm = enableAlarm.value;
+    _initialAlarmSound = alarmSound.value;
   }
 
   void toggleMode(bool isTask) {
     isTaskMode.value = isTask;
+  }
+
+  void toggleReminder(String offset) {
+    if (selectedReminders.contains(offset)) {
+      selectedReminders.remove(offset);
+    } else {
+      selectedReminders.add(offset);
+    }
   }
 
   Future<void> pickDeadline(BuildContext context) async {
@@ -182,6 +214,9 @@ class AddEntryController extends GetxController {
 
       if (isTaskMode.value) {
         entryData['deadline'] = Timestamp.fromDate(deadlineDate.value!);
+        entryData['reminders'] = selectedReminders.toList();
+        entryData['enableAlarm'] = enableAlarm.value;
+        entryData['alarmSound'] = alarmSound.value;
       }
 
       String currentDocId;
@@ -195,8 +230,8 @@ class AddEntryController extends GetxController {
           uid,
         ).doc(currentDocId).update(entryData);
 
-        // Cancel notifikasi lama (wajib pakai nama parameter kalau lu update package-nya)
-        await notificationService.cancelReminder(currentDocId.hashCode);
+        // Cancel notifikasi lama pakai fungsi baru
+        await notificationService.cancelTaskReminders(currentDocId);
       } else {
         // Create data baru
         entryData['createdAt'] = FieldValue.serverTimestamp();
@@ -204,28 +239,17 @@ class AddEntryController extends GetxController {
         currentDocId = docRef.id; // Ambil docId yang baru digenerate Firestore
       }
 
-      if (isTaskMode.value &&
-          entryData['isDone'] == false &&
-          deadlineDate.value != null) {
-        // Default pengingat: 1 jam sebelum deadline
-        DateTime reminderTime = deadlineDate.value!.subtract(
-          const Duration(hours: 1),
-        );
-
-        // Kalau deadlinenya kurang dari 1 jam dari sekarang, ingetin tepat di waktu deadline aja
-        if (reminderTime.isBefore(DateTime.now())) {
-          reminderTime = deadlineDate.value!;
-        }
-
-        await notificationService.scheduleReminder(
-          id: currentDocId.hashCode,
-          title: '⏳ Task Deadline Alert!',
-          body: 'Hey Revan, your task "$title" is due soon!',
-          scheduledTime: reminderTime,
-          payload: currentDocId, // Bawa docId buat fitur tap notifikasi nanti
+      if (isTaskMode.value && entryData['isDone'] == false && deadlineDate.value != null && selectedReminders.isNotEmpty) {
+        await notificationService.scheduleTaskReminders(
+          docId: currentDocId,
+          title: '⏳ Task Reminder: $title',
+          body: 'Hey, just a reminder for your task!',
+          deadline: deadlineDate.value!,
+          reminders: selectedReminders.toList(),
+          enableAlarm: enableAlarm.value,
+          alarmSound: alarmSound.value,
         );
       }
-
       HapticFeedback.lightImpact();
 
       // Clear form fields
@@ -234,6 +258,9 @@ class AddEntryController extends GetxController {
       categoryController.clear();
       noteController.clear();
       deadlineDate.value = null;
+      selectedReminders.value = ['at_deadline'];
+      enableAlarm.value = false;
+      alarmSound.value = AlarmSoundRegistry.classic;
 
       Get.back();
 
@@ -273,7 +300,18 @@ class AddEntryController extends GetxController {
         categoryController.text != _initialCategory ||
         noteController.text != _initialNote ||
         isTaskMode.value != _initialIsTaskMode ||
-        deadlineDate.value != _initialDeadline;
+        deadlineDate.value != _initialDeadline ||
+        !_listEquals(selectedReminders, _initialReminders) ||
+        enableAlarm.value != _initialEnableAlarm ||
+        alarmSound.value != _initialAlarmSound;
+  }
+
+  bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override

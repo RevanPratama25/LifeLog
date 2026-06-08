@@ -33,6 +33,10 @@ import '../modules/root/views/root_view.dart';
 import '../modules/reflections/bindings/reflections_binding.dart';
 import '../modules/reflections/views/reflections_view.dart';
 
+//Edit Profile
+import '../modules/edit_profile/bindings/edit_profile_binding.dart';
+import '../modules/edit_profile/views/edit_profile_view.dart';
+
 part 'app_routes.dart';
 
 class AppPages {
@@ -51,7 +55,7 @@ class AppPages {
 
     GetPage(
       name: _Paths.base,
-      page: () => const BaseView(),
+      page: () => BaseView(),
       binding: BaseBinding(),
       transition: Transition.fadeIn,
     ),
@@ -97,6 +101,12 @@ class AppPages {
       name: _Paths.reflections,
       page: () => const ReflectionView(),
       binding: ReflectionsBinding(),
+    ),
+
+    GetPage(
+      name: _Paths.editProfile,
+      page: () => const EditProfileView(),
+      binding: EditProfileBinding(),
     ),
   ];
 }

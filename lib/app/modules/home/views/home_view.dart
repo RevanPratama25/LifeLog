@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../core/theme/app_colors.dart';
 import '../controllers/home_controller.dart';
+import '../../auth/controllers/auth_controller.dart';
+import '../../../core/theme/app_colors.dart';
 
 
 
@@ -32,13 +33,13 @@ class HomeView extends GetView<HomeController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(),
+              _buildGreeting(),
               const SizedBox(height: 32),
               
               _buildDailyMomentum(),
               const SizedBox(height: 16),
 
-              _buildWeeklyStreak(),
+              _buildDailyStreak(),
               const SizedBox(height: 32),
               
               _buildQuickStats(),
@@ -48,7 +49,7 @@ class HomeView extends GetView<HomeController> {
               const SizedBox(height: 32),
               
               _buildRecentInsights(),
-              const SizedBox(height: 80), // Extra padding for bottom nav
+              const SizedBox(height: 160), // Extra padding for bottom nav and FAB
             ],
           ),
         ),
@@ -56,35 +57,41 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  // 1. Personalized Header & Streak
-  Widget _buildHeader() {
-    // List nama hari dalam Bahasa Inggris sesuai refactoring documentation
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    final now = DateTime.now();
-    final dateString = '${days[now.weekday % 7]}, ${now.day} ${months[now.month - 1]} ${now.year}';
+  Widget _buildGreeting() {
+    return Obx(() {
+      final now = DateTime.now();
+      String greeting = 'Hello';
+      if (now.hour < 12) {
+        greeting = 'Good Morning';
+      } else if (now.hour < 17) {
+        greeting = 'Good Afternoon';
+      } else {
+        greeting = 'Good Evening';
+      }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Hello, Revan!', // Nama user
-              style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              dateString, // Tanggal real-time
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
-            ),
-          ],
-        ),
-      ],
-    );
+      final authController = Get.find<AuthController>();
+      final user = authController.currentUser.value;
+      final userName = user?.displayName ?? user?.email?.split('@').first ?? 'Guest';
+
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final dateString = '${days[now.weekday % 7]}, ${now.day} ${months[now.month - 1]} ${now.year}';
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$greeting, $userName!',
+            style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            dateString,
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+          ),
+        ],
+      );
+    });
   }
 
   // 2. Daily Momentum Placeholder
@@ -129,11 +136,8 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  // 🔥 UI Weekly Streak (LinkedIn Style, tapi Dark/Teal Theme)
-  Widget _buildWeeklyStreak() {
-    final days = ['Sn', 'Sl', 'Rb', 'Km', 'Jm', 'Sb', 'Mg'];
-    final now = DateTime.now();
-
+  // 🔥 UI Daily Streak
+  Widget _buildDailyStreak() {
     return Obx(() {
       return Container(
         width: double.infinity,
@@ -141,81 +145,116 @@ class HomeView extends GetView<HomeController> {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Streak
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                const Text(
-                  'Weekly Consistency',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Row(
-                  children: [
-                    Icon(Icons.local_fire_department, color: controller.currentStreak.value > 0 ? Colors.orange : Colors.white24, size: 20),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${controller.currentStreak.value} Days',
-                      style: TextStyle(
-                        color: controller.currentStreak.value > 0 ? Colors.orange : Colors.white54,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
+                _buildStreakItem('Current Streak', controller.currentStreak.value, Icons.local_fire_department, Colors.orange),
+                Container(width: 1, height: 40, color: Colors.white12),
+                _buildStreakItem('Best Streak', controller.bestStreak.value, Icons.emoji_events, Colors.amber),
               ],
             ),
-            const SizedBox(height: 20),
-            
-            // Barisan Hari (Circles)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(7, (index) {
-                final isCompleted = controller.weekCompletion[index];
-                final isToday = (now.weekday - 1) == index;
-
-                return Column(
-                  children: [
-                    Text(
-                      days[index],
-                      style: TextStyle(
-                        color: isToday ? AppColors.primary : Colors.white54,
-                        fontSize: 12,
-                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isCompleted 
-                            ? AppColors.primary 
-                            : AppColors.background, // Warna redup kalau belum
-                        border: Border.all(
-                          color: isCompleted 
-                              ? AppColors.primary 
-                              : (isToday ? Colors.white38 : Colors.transparent),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: isCompleted
-                          ? const Icon(Icons.check, color: AppColors.background, size: 18)
-                          : (isToday ? Icon(Icons.circle, color: Colors.white.withValues(alpha: 0.1), size: 12) : null),
-                    ),
-                  ],
-                );
-              }),
-            ),
+            const SizedBox(height: 24),
+            _buildStreakIndicators(),
           ],
         ),
       );
     });
+  }
+
+  Widget _buildStreakIndicators() {
+    final now = DateTime.now();
+    final daysList = List.generate(7, (index) {
+      return now.subtract(Duration(days: 6 - index));
+    });
+
+    final activeDatesSet = controller.activeDatesList.toSet();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: daysList.map((date) {
+        final dateStr = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+        final isActive = activeDatesSet.contains(dateStr);
+        final dayName = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1];
+
+        return Column(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isActive ? AppColors.primary : Colors.transparent,
+                border: Border.all(
+                  color: isActive ? AppColors.primary : Colors.white24,
+                  width: 2,
+                ),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ]
+                    : [],
+              ),
+              child: isActive
+                  ? const Icon(Icons.check, size: 14, color: Colors.black)
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              dayName,
+              style: TextStyle(
+                color: isActive ? AppColors.primary : Colors.white54,
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildStreakItem(String title, int days, IconData icon, Color color) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: days > 0 ? color : Colors.white24, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              '$days',
+              style: TextStyle(
+                color: days > 0 ? Colors.white : Colors.white54,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          title,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.5),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
   }
 
   // 3. Quick Stats Widget
@@ -309,28 +348,32 @@ class HomeView extends GetView<HomeController> {
               final title = data['title']?.toString() ?? 'Task';
               final deadline = (data['deadline'] as Timestamp).toDate();
               
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border(left: BorderSide(color: Colors.orange.withValues(alpha: 0.8), width: 4)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          const SizedBox(height: 4),
-                          Text('Deadline: ${_formatDeadline(deadline)}', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
-                        ],
+              return InkWell(
+                onTap: () => _showTaskDetailBottomSheet(data, doc.id),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border(left: BorderSide(color: Colors.orange.withValues(alpha: 0.8), width: 4)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 4),
+                            Text('Deadline: ${_formatDeadline(deadline)}', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
+                          ],
+                        ),
                       ),
-                    ),
-                    Icon(Icons.circle_outlined, color: Colors.white.withValues(alpha: 0.3)),
-                  ],
+                      Icon(Icons.circle_outlined, color: Colors.white.withValues(alpha: 0.3)),
+                    ],
+                  ),
                 ),
               );
             },
@@ -367,26 +410,30 @@ class HomeView extends GetView<HomeController> {
               final note = data['note']?.toString() ?? '';
               final title = data['title']?.toString() ?? 'Activity';
               
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: const Border(left: BorderSide(color: AppColors.primary, width: 4)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '"$note"',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontStyle: FontStyle.italic),
-                    ),
-                    const SizedBox(height: 8),
-                    Text('From: $title', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ],
+              return InkWell(
+                onTap: () => _showInsightDetailBottomSheet(data, doc.id),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: const Border(left: BorderSide(color: AppColors.primary, width: 4)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '"$note"',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontStyle: FontStyle.italic),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('From: $title', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
                 ),
               );
             },
@@ -429,6 +476,114 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
+  void _showTaskDetailBottomSheet(Map<String, dynamic> data, String docId) {
+    // Similar to TaskView bottom sheet
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 24),
+            Text(data['title']?.toString() ?? 'Task', style: Get.textTheme.displayMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            if ((data['description']?.toString() ?? '').isNotEmpty) ...[
+              Text(data['description'].toString(), style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 16),
+            ],
+            const Divider(color: Colors.white12),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Get.back();
+                      Get.toNamed('/add-entry', arguments: {'isEdit': true, 'docId': docId, 'data': data});
+                    },
+                    icon: const Icon(Icons.edit, color: Colors.white),
+                    label: const Text('Edit', style: TextStyle(color: Colors.white)),
+                    style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white24)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Get.back();
+                      FirebaseFirestore.instance.collection('entries').doc(docId).delete();
+                    },
+                    icon: const Icon(Icons.delete, color: Colors.white),
+                    label: const Text('Delete', style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showInsightDetailBottomSheet(Map<String, dynamic> data, String docId) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 24),
+            Text(data['title']?.toString() ?? 'Activity', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white12),
+            const SizedBox(height: 16),
+            Text(data['note']?.toString() ?? '', style: const TextStyle(color: Colors.white, fontSize: 16, fontStyle: FontStyle.italic)),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Get.back();
+                      Get.toNamed('/add-entry', arguments: {'isEdit': true, 'docId': docId, 'data': data});
+                    },
+                    icon: const Icon(Icons.edit, color: Colors.white),
+                    label: const Text('Edit', style: TextStyle(color: Colors.white)),
+                    style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white24)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Get.back();
+                      FirebaseFirestore.instance.collection('entries').doc(docId).delete();
+                    },
+                    icon: const Icon(Icons.delete, color: Colors.white),
+                    label: const Text('Delete', style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // 🔥 KUSTOM WIDGET: THE CYBER REACTOR
