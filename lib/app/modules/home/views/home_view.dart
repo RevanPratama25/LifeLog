@@ -133,7 +133,7 @@ class HomeView extends GetView<HomeController> {
             if (points >= target) ...[
               const SizedBox(height: 8),
               const Text(
-                'Reactor Overload! You are on fire 🔥',
+                'Reactor Overload! You are on fire',
                 style: TextStyle(
                   color: Colors.orange,
                   fontSize: 12,
@@ -436,7 +436,7 @@ class HomeView extends GetView<HomeController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader(
-          title: '💡 Recent Insights',
+          title: ' Recent Insights',
           actionText: 'Go to Reflections',
           onTap: () => controller.navigateToTab(2),
         ),
