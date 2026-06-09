@@ -2,39 +2,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/date_formatters.dart';
 import '../../../routes/app_pages.dart';
 import '../controllers/reflections_controller.dart';
 
 class ReflectionView extends GetView<ReflectionController> {
   const ReflectionView({super.key});
 
-  // Formats a date for display below quote cards
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Ags',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
-
-  // Shows the full note in a bottom sheet with Edit/Delete actions
+  /// Shows the full note in a bottom sheet with Edit/Delete actions.
   void _showNoteDetail(Map<String, dynamic> data, String docId) {
     final note = data['note']?.toString() ?? '';
     final title = data['title']?.toString() ?? 'Activity';
     final category = data['category']?.toString() ?? 'UNCATEGORIZED';
     final timestamp = data['createdAt'] as Timestamp?;
-    final dateStr = _formatDate(timestamp?.toDate());
+    final dateStr = DateFormatters.formatShortDate(timestamp?.toDate());
 
     Get.bottomSheet(
       Container(
@@ -117,7 +98,7 @@ class ReflectionView extends GetView<ReflectionController> {
                         Get.back();
                         await Future.delayed(const Duration(milliseconds: 150));
 
-                        Get.toNamed(Routes.addEntry, arguments: { 
+                        Get.toNamed(Routes.addEntry, arguments: {
                           'isEdit': true,
                           'docId': docId,
                           'data': data,
@@ -147,7 +128,7 @@ class ReflectionView extends GetView<ReflectionController> {
                         color: Colors.white,
                       ),
                       label: const Text(
-                        'Hapus',
+                        'Delete',
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -192,7 +173,7 @@ class ReflectionView extends GetView<ReflectionController> {
 
           final allDocs = snapshot.data?.docs ?? [];
 
-          // 1. Filter: Only keep entries that have non-empty 'note' field
+          // Filter: only keep entries that have non-empty 'note' field
           final docsWithNotes = allDocs.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
             final note = data['note']?.toString().trim() ?? '';
@@ -203,7 +184,7 @@ class ReflectionView extends GetView<ReflectionController> {
             return _buildEmptyState();
           }
 
-          // 2. Group by 'category'
+          // Group by 'category'
           Map<String, List<QueryDocumentSnapshot>> groupedNotes = {};
 
           for (var doc in docsWithNotes) {
@@ -217,7 +198,7 @@ class ReflectionView extends GetView<ReflectionController> {
             groupedNotes[category]!.add(doc);
           }
 
-          // 3. Render the UI based on selected folder state
+          // Render the UI based on selected folder state
           return Obx(() {
             final selectedFolder = controller.selectedFolder.value;
 
@@ -315,7 +296,7 @@ class ReflectionView extends GetView<ReflectionController> {
     final note = data['note']?.toString() ?? '';
     final title = data['title']?.toString() ?? 'Activity';
     final timestamp = data['createdAt'] as Timestamp?;
-    final dateStr = _formatDate(timestamp?.toDate());
+    final dateStr = DateFormatters.formatShortDate(timestamp?.toDate());
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -403,7 +384,7 @@ class ReflectionView extends GetView<ReflectionController> {
     );
   }
 
-  // Empty state when no insights exist yet
+  /// Empty state when no insights exist yet.
   Widget _buildEmptyState() {
     return Center(
       child: Column(

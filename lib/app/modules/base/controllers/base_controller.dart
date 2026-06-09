@@ -7,6 +7,7 @@ import '../../timeline/views/timeline_view.dart';
 import '../../tasks/views/tasks_view.dart';
 import '../../reflections/views/reflections_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/utils/reminder_utils.dart';
 
 class BaseController extends GetxController {
   final currentIndex = 0.obs;
@@ -42,7 +43,7 @@ class BaseController extends GetxController {
           final deadline = deadlineTimestamp.toDate();
           
           for (String offset in reminders) {
-            final reminderTime = _calculateReminderTime(deadline, offset);
+            final reminderTime = calculateReminderTime(deadline, offset);
             
             // If the reminder time has passed and it's within the last 24 hours
             if (reminderTime.isBefore(now) && now.difference(reminderTime).inHours < 24) {
@@ -66,20 +67,7 @@ class BaseController extends GetxController {
     });
   }
 
-  DateTime _calculateReminderTime(DateTime deadline, String offset) {
-    switch (offset) {
-      case 'at_deadline': return deadline;
-      case '30_min': return deadline.subtract(const Duration(minutes: 30));
-      case '1_hour': return deadline.subtract(const Duration(hours: 1));
-      case '3_hours': return deadline.subtract(const Duration(hours: 3));
-      case '5_hours': return deadline.subtract(const Duration(hours: 5));
-      case '12_hours': return deadline.subtract(const Duration(hours: 12));
-      case '1_day': return deadline.subtract(const Duration(days: 1));
-      case '3_days': return deadline.subtract(const Duration(days: 3));
-      case '7_days': return deadline.subtract(const Duration(days: 7));
-      default: return deadline;
-    }
-  }
+
 
   void markAllAsRead() {
     final updated = notifications.map((n) {

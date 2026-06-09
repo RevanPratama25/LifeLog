@@ -130,7 +130,7 @@ class AddEntryView extends GetView<AddEntryController> {
     );
   }
 
-  // Toggle button: Task vs Log mode
+  /// Toggle button: Task vs Log mode.
   Widget _buildTypeToggle() {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -207,8 +207,8 @@ class AddEntryView extends GetView<AddEntryController> {
     );
   }
 
- // Extra fields for Task mode (deadline date picker)
-  Widget _buildTaskExtras(BuildContext context) { // 🔥 Tambahkan parameter context di sini
+  /// Extra fields for Task mode (deadline date picker & reminders).
+  Widget _buildTaskExtras(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -219,10 +219,8 @@ class AddEntryView extends GetView<AddEntryController> {
           ),
         ),
         const SizedBox(height: 8),
-        // 🔥 Obx dipindah ke luar InkWell biar lebih stabil nangkep UI update
         Obx(() => InkWell(
-          // 🔥 PERBAIKAN UTAMA: Tambahkan (context) agar fungsi tereksekusi
-          onTap: () => controller.pickDeadline(context), 
+          onTap: () => controller.pickDeadline(context),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -230,8 +228,8 @@ class AddEntryView extends GetView<AddEntryController> {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                // Biar ada efek visual kalau udah diisi vs belum diisi
-                color: controller.deadlineDate.value == null 
+                // Visual indicator: highlight when date is selected
+                color: controller.deadlineDate.value == null
                     ? Colors.transparent 
                     : AppColors.primary.withValues(alpha: 0.3),
               ),
@@ -322,7 +320,6 @@ class AddEntryView extends GetView<AddEntryController> {
               ),
               const SizedBox(height: 8),
               ...AlarmSoundRegistry.availableSounds.map((sound) {
-                // ignore: deprecated_member_use
                 return RadioListTile<String>(
                   title: Text(AlarmSoundRegistry.getDisplayName(sound), style: const TextStyle(color: Colors.white)),
                   value: sound,
@@ -343,7 +340,7 @@ class AddEntryView extends GetView<AddEntryController> {
       ],
     );
   }
-  // Extra fields for Log mode (notes/insight)
+  /// Extra fields for Log mode (notes/insight).
   Widget _buildLogExtras() {
     return CustomTextField(
       label: 'Notes / Insight (Optional)',

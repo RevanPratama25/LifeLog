@@ -12,25 +12,24 @@ class HomeController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Variabel untuk Daily Momentum
+  /// Daily momentum: how many activities completed today.
   final todayMomentum = 0.obs;
-  final targetMomentum = 3; // Target default: 3 aktivitas per hari
+  final targetMomentum = 3; // Default target: 3 activities per day
 
-  //Variabel Streak & Week Completion
+  /// Streak tracking.
   final currentStreak = 0.obs;
   final bestStreak = 0.obs;
 
-  // Rx variables untuk menampung hitungan
+  /// Counts displayed in the quick stats cards.
   final activeTasksCount = 0.obs;
   final totalLogsCount = 0.obs;
 
-  // Rx variable untuk menampung tanggal aktif untuk visualisasi streak
+  /// Active dates for streak visualization (format: YYYY-MM-DD).
   final activeDatesList = <String>[].obs;
 
-  // Rx variables baru untuk nampung data list
+  /// Data lists for the dashboard sections.
   final upcomingDeadlines = <QueryDocumentSnapshot>[].obs;
   final recentInsights = <QueryDocumentSnapshot>[].obs;
-
 
   @override
   void onInit() {
@@ -38,7 +37,8 @@ class HomeController extends GetxController {
     _listenToStats();
   }
 
-  // Fungsi untuk memantau perubahan data secara real-time
+  /// Listens to real-time changes in the user's entries collection
+  /// and derives all dashboard statistics from a single stream.
   void _listenToStats() {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
@@ -61,7 +61,7 @@ class HomeController extends GetxController {
       List<QueryDocumentSnapshot> tempUpcoming = [];
       List<QueryDocumentSnapshot> tempInsights = [];
 
-      //Set untuk nyimpen tanggal-tanggal di mana user aktif (ada isDone == true)
+      // Set of dates where the user completed an activity
       Set<String> activeDates = {};
 
       for (var doc in snapshot.docs) {
@@ -72,24 +72,25 @@ class HomeController extends GetxController {
         final deadline = (data['deadline'] as Timestamp?)?.toDate();
         final note = data['note']?.toString().trim() ?? '';
 
-        // Catat tanggal aktivitas selesai (ubah format ke YYYY-MM-DD biar gampang dicocokin)
+        // Record completed activity dates (YYYY-MM-DD format)
         if (isDone && createdAt != null) {
-          final dateString = "${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}";
+          final dateString =
+              "${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}";
           activeDates.add(dateString);
-          
-          // Kalau tanggal selesainya adalah HARI INI, tambah poin momentum!
+
+          // If completed today, increment momentum
           if (dateString == todayStr) {
             todayMomentumCount++;
           }
         }
 
-        // 1. Hitung Stats
+        // 1. Count stats
         if (isTask && !isDone) activeCount++;
         if (isDone && createdAt != null && createdAt.isAfter(thirtyDaysAgo)) {
           logsCount++;
         }
 
-        // 2. Filter Upcoming Deadlines
+        // 2. Filter upcoming deadlines (next 7 days)
         if (isTask && !isDone && deadline != null) {
           if (deadline.isAfter(today.subtract(const Duration(seconds: 1))) &&
               deadline.isBefore(hPlus7)) {
@@ -97,17 +98,17 @@ class HomeController extends GetxController {
           }
         }
 
-        // 3. Filter Recent Insights
+        // 3. Filter entries with insights
         if (note.isNotEmpty) {
           tempInsights.add(doc);
         }
       }
 
-      //LOGIKA TOTAL STREAK (Hitung mundur dari hari ini atau kemarin)
+      // Current streak: count backwards from today (or yesterday if no activity today)
       int streak = 0;
       DateTime checkDate = today;
 
-      // Kasih toleransi: kalau hari ini belum ngisi, cek dari kemarin
+      // Tolerance: if no activity today, check from yesterday
       if (!activeDates.contains(todayStr)) {
         checkDate = today.subtract(const Duration(days: 1));
       }
@@ -119,21 +120,22 @@ class HomeController extends GetxController {
           streak++;
           checkDate = checkDate.subtract(const Duration(days: 1));
         } else {
-          break; // Putus streak-nya
+          break;
         }
       }
       currentStreak.value = streak;
 
-      // LOGIKA BEST STREAK
+      // Best streak: find the longest consecutive date sequence
       int maxStreak = 0;
       int tempStreak = 0;
       DateTime? prevDate;
-      
+
       final sortedDates = activeDates.toList()..sort();
       for (var dateStr in sortedDates) {
         final parts = dateStr.split('-');
-        final d = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
-        
+        final d = DateTime(
+            int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+
         if (prevDate == null) {
           tempStreak = 1;
         } else {
@@ -151,26 +153,27 @@ class HomeController extends GetxController {
       }
       bestStreak.value = maxStreak;
 
-      // Sorting (sama kayak sebelumnya)
+      // Sort upcoming deadlines by deadline date (ascending)
       tempUpcoming.sort(
-        (a, b) => ((a.data() as Map<String, dynamic>)['deadline'] as Timestamp)
-            .toDate()
-            .compareTo(
-              ((b.data() as Map<String, dynamic>)['deadline'] as Timestamp)
-                  .toDate(),
-            ),
+        (a, b) =>
+            ((a.data() as Map<String, dynamic>)['deadline'] as Timestamp)
+                .toDate()
+                .compareTo(
+                  ((b.data() as Map<String, dynamic>)['deadline'] as Timestamp)
+                      .toDate(),
+                ),
       );
+      // Sort insights by creation date (newest first)
       tempInsights.sort(
         (a, b) =>
             (((b.data() as Map<String, dynamic>)['createdAt'] as Timestamp?)
                         ?.toDate() ??
                     DateTime(1970))
                 .compareTo(
-                  ((a.data() as Map<String, dynamic>)['createdAt']
-                              as Timestamp?)
-                          ?.toDate() ??
-                      DateTime(1970),
-                ),
+              ((a.data() as Map<String, dynamic>)['createdAt'] as Timestamp?)
+                      ?.toDate() ??
+                  DateTime(1970),
+            ),
       );
 
       activeTasksCount.value = activeCount;
@@ -182,34 +185,56 @@ class HomeController extends GetxController {
     });
   }
 
-  // Fungsi navigasi antar tab via BaseController
+  /// Navigates to a specific bottom navigation tab.
   void navigateToTab(int index) {
     Get.find<BaseController>().changePage(index);
   }
 
-  // Fungsi navigasi ke Tasks -> Completed Logs
+  /// Navigates to Tasks tab → Completed Logs sub-tab.
   void navigateToCompletedLogs() {
-    // 1. Pindah tab utama ke Tasks (asumsi index 1)
     Get.find<BaseController>().changePage(1);
 
-    // 2. Beritahu TasksController untuk pindah ke sub-tab "Completed Logs"
-    // Pastikan TasksController udah ada di memori
     if (Get.isRegistered<TaskController>()) {
       Get.find<TaskController>().switchToCompletedTab();
     }
   }
 
+  /// Deletes an entry from Firestore using the centralized helper.
+  ///
+  /// Replaces direct `FirebaseFirestore.instance.collection('entries')` calls
+  /// that were previously in the view layer.
+  Future<void> deleteEntry(String docId) async {
+    try {
+      final uid = _auth.currentUser?.uid;
+      if (uid == null) return;
+
+      await userEntriesRef(_firestore, uid).doc(docId).delete();
+      await Get.find<NotificationService>().cancelTaskReminders(docId);
+
+      Get.snackbar(
+        'Deleted',
+        'Entry deleted successfully.',
+        backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to delete: $e');
+    }
+  }
+
+  /// Shows a bottom sheet listing all pending notification reminders.
   Future<void> showPendingNotifications() async {
     final notificationService = Get.find<NotificationService>();
     final pendingRequests = await notificationService.getPendingNotifications();
-    
+
     Get.bottomSheet(
       Container(
         constraints: BoxConstraints(maxHeight: Get.height * 0.7),
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,11 +242,18 @@ class HomeController extends GetxController {
           children: [
             const Text(
               'Pending Reminders',
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 16),
             if (pendingRequests.isEmpty)
-              const Text('No pending reminders.', style: TextStyle(color: Colors.white54))
+              const Text(
+                'No pending reminders.',
+                style: TextStyle(color: Colors.white54),
+              )
             else
               Expanded(
                 child: ListView.builder(
@@ -230,9 +262,20 @@ class HomeController extends GetxController {
                   itemBuilder: (context, index) {
                     final req = pendingRequests[index];
                     return ListTile(
-                      leading: const Icon(Icons.notifications_active, color: AppColors.primary),
-                      title: Text(req.title ?? 'Reminder', style: const TextStyle(color: Colors.white)),
-                      subtitle: Text(req.body ?? '', style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                      leading: const Icon(
+                        Icons.notifications_active,
+                        color: AppColors.primary,
+                      ),
+                      title: Text(
+                        req.title ?? 'Reminder',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        req.body ?? '',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                        ),
+                      ),
                     );
                   },
                 ),

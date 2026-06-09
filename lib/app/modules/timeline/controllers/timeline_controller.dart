@@ -6,11 +6,11 @@ import '../../../core/utils/firestore_helpers.dart';
 import '../../../core/services/notification_service.dart';
 
 class TimelineController extends GetxController {
-  // Search query state
+  /// Search query state.
   final searchQuery = ''.obs;
   final searchController = TextEditingController();
 
-  // Category & Sort State
+  /// Category & sort state.
   final selectedCategory = 'ALL'.obs;
   final isDescending = true.obs;
 
@@ -38,7 +38,7 @@ class TimelineController extends GetxController {
 
   final completionNoteController = TextEditingController();
 
-  // Real-time stream of all entries, ordered by most recent first
+  /// Real-time stream of all entries, ordered by creation date.
   Stream<QuerySnapshot> get entriesStream =>
       userEntriesRef(_firestore, _auth.currentUser!.uid)
           .orderBy('createdAt', descending: isDescending.value)
@@ -50,10 +50,8 @@ class TimelineController extends GetxController {
     try {
       final note = completionNoteController.text.trim();
 
-      // Prepare update payload
-      Map<String, dynamic> updateData = {'isDone': true};
+      final Map<String, dynamic> updateData = {'isDone': true};
 
-      // Only include the note if the user provided one
       if (note.isNotEmpty) {
         updateData['note'] = note;
       }
@@ -62,10 +60,8 @@ class TimelineController extends GetxController {
           .doc(docId)
           .update(updateData);
 
-      // Cancel scheduled reminder
       await Get.find<NotificationService>().cancelTaskReminders(docId);
 
-      // Clear form and close bottom sheet
       completionNoteController.clear();
       Get.back();
 
@@ -94,7 +90,6 @@ class TimelineController extends GetxController {
           .doc(docId)
           .delete();
 
-      // Cancel scheduled reminder
       await Get.find<NotificationService>().cancelTaskReminders(docId);
 
       if (Get.isBottomSheetOpen == true) {

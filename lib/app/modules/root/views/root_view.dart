@@ -18,28 +18,17 @@ class RootView extends GetView<RootController> {
             // App logo icon
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.1),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.4),
-                    blurRadius: 40,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.bubble_chart, color: AppColors.primary, size: 80),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              'LIFELOG',
-              style: Get.textTheme.displayMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: 4.0,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Image.asset(
+                  'assets/icon.png',
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 64),
             const SizedBox(
               width: 24,
               height: 24,
