@@ -14,7 +14,7 @@ class AddEntryController extends GetxController {
   final isEditMode = false.obs;
   String? editDocId;
 
-  // Stores initial form values to detect unsaved changes
+  /// Stores initial form values to detect unsaved changes.
 
   final titleController = TextEditingController();
   final descController = TextEditingController();
@@ -114,21 +114,22 @@ class AddEntryController extends GetxController {
     }
   }
 
+  /// Picks a deadline date and time using native pickers.
   Future<void> pickDeadline(BuildContext context) async {
-    // 1. Pilih Tanggal Dulu
+    // 1. Pick date first
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: deadlineDate.value ?? DateTime.now(),
-      firstDate: DateTime.now(), // Nggak bisa milih tanggal masa lalu
-      lastDate: DateTime(DateTime.now().year + 5), // Maksimal 5 tahun ke depan
+      firstDate: DateTime.now(),
+      lastDate: DateTime(DateTime.now().year + 5),
       builder: (context, child) {
-        // Biar pop-up kalendernya ngikutin tema dark/teal lu
+        // Match the dark/teal design system
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: Colors.teal, // Sesuaikan dengan AppColors.primary lu
+              primary: Colors.teal,
               onPrimary: Colors.white,
-              surface: Color(0xFF1E1E1E), // AppColors.surface
+              surface: Color(0xFF1E1E1E),
               onSurface: Colors.white,
             ),
           ),
@@ -137,11 +138,11 @@ class AddEntryController extends GetxController {
       },
     );
 
-    // Kalau user klik 'Cancel' di kalender, batalkan proses
+    // If user cancelled the date picker, abort
     if (pickedDate == null) return;
     if (!context.mounted) return;
 
-    // 2. Lanjut Pilih Jam
+    // 2. Pick time
     final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
       initialTime: deadlineDate.value != null 
@@ -160,10 +161,10 @@ class AddEntryController extends GetxController {
       },
     );
 
-    // Kalau user klik 'Cancel' di jam, batalkan proses (tanggal nggak jadi disave)
+    // If user cancelled the time picker, abort
     if (pickedTime == null) return;
 
-    // 3. Gabungkan Tanggal dan Jam jadi satu objek DateTime
+    // 3. Combine date and time into a single DateTime
     final finalDateTime = DateTime(
       pickedDate.year,
       pickedDate.month,
@@ -172,7 +173,6 @@ class AddEntryController extends GetxController {
       pickedTime.minute,
     );
 
-    // Update Rx variable lu
     deadlineDate.value = finalDateTime;
   }
 
@@ -209,7 +209,7 @@ class AddEntryController extends GetxController {
             : category,
         'note': note,
         'isTask': isTaskMode.value,
-        'isDone': !isTaskMode.value, // Kalau Log, otomatis Done
+        'isDone': !isTaskMode.value, // Logs are automatically marked as done
       };
 
       if (isTaskMode.value) {
@@ -224,19 +224,19 @@ class AddEntryController extends GetxController {
       // Branch: Update existing entry vs Create new entry
       if (isEditMode.value && editDocId != null) {
         currentDocId = editDocId!;
-        // Update data di Firestore
+        // Update existing entry
         await userEntriesRef(
           _firestore,
           uid,
         ).doc(currentDocId).update(entryData);
 
-        // Cancel notifikasi lama pakai fungsi baru
+        // Cancel old notifications
         await notificationService.cancelTaskReminders(currentDocId);
       } else {
-        // Create data baru
+        // Create new entry
         entryData['createdAt'] = FieldValue.serverTimestamp();
         final docRef = await userEntriesRef(_firestore, uid).add(entryData);
-        currentDocId = docRef.id; // Ambil docId yang baru digenerate Firestore
+        currentDocId = docRef.id;
       }
 
       if (isTaskMode.value && entryData['isDone'] == false && deadlineDate.value != null && selectedReminders.isNotEmpty) {

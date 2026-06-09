@@ -9,14 +9,14 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Category filter state
+  /// Currently selected category filter for the list view.
   final selectedCategory = 'ALL'.obs;
 
-  // Search filter state
+  /// Search filter state.
   final searchQuery = ''.obs;
   final searchController = TextEditingController();
 
-  // Tab Controller (Active/Completed)
+  /// Tab controller for switching between Active Tasks and Completed Logs.
   late TabController tabController;
 
   @override
@@ -32,25 +32,26 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
   void onClose() {
     searchController.dispose();
     tabController.dispose();
+    completionNoteController.dispose();
     super.onClose();
   }
 
+  /// Switches to the Completed Logs tab with animation.
   void switchToCompletedTab() {
-    // Pindah ke tab index 1 (Completed Logs) dengan animasi
-    tabController.animateTo(1); 
+    tabController.animateTo(1);
   }
 
   void setCategory(String category) {
     selectedCategory.value = category;
   }
 
-  // Sorting state
+  /// Sorting state: true = newest first, false = oldest first.
   final isDescending = true.obs;
 
-  // Text controller for completion notes when finishing a task
+  /// Text controller for the optional insight field when completing a task.
   final completionNoteController = TextEditingController();
 
-  // Stream for active (incomplete) tasks
+  /// Stream for active (incomplete) tasks.
   Stream<QuerySnapshot> get activeTasksStream =>
       userEntriesRef(_firestore, _auth.currentUser!.uid)
           .where('isTask', isEqualTo: true)
@@ -58,7 +59,7 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
           .orderBy('createdAt', descending: isDescending.value)
           .snapshots();
 
-  // Stream for completed logs (isDone == true)
+  /// Stream for completed logs (isDone == true).
   Stream<QuerySnapshot> get logsStream =>
       userEntriesRef(_firestore, _auth.currentUser!.uid)
           .where('isDone', isEqualTo: true)
@@ -72,10 +73,8 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
     try {
       final note = completionNoteController.text.trim();
       
-      // Prepare update payload
-      Map<String, dynamic> updateData = {'isDone': true};
+      final Map<String, dynamic> updateData = {'isDone': true};
 
-      // Only include the note if the user provided one
       if (note.isNotEmpty) {
         updateData['note'] = note;
       }
@@ -84,10 +83,8 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
           .doc(docId)
           .update(updateData);
           
-      // Cancel scheduled reminder
       await Get.find<NotificationService>().cancelTaskReminders(docId);
 
-      // Clear form and close bottom sheet
       completionNoteController.clear();
       Get.back();
 
@@ -105,7 +102,6 @@ class TaskController extends GetxController with GetSingleTickerProviderStateMix
           .doc(docId)
           .delete();
 
-      // Cancel scheduled reminder
       await Get.find<NotificationService>().cancelTaskReminders(docId);
 
       Get.back();

@@ -1,15 +1,17 @@
-import 'package:flutter/foundation.dart'; // Ditambahkan untuk debugPrint
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:get/get.dart';
 import 'dart:io';
+import '../utils/reminder_utils.dart';
 
 class NotificationService extends GetxService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
+  /// Initializes the notification plugin and requests required permissions.
   Future<NotificationService> init() async {
-    // 1. Inisialisasi Zona Waktu
+    // Initialize timezone data
     try {
       tz.initializeTimeZones();
       tz.setLocalLocation(tz.getLocation('Asia/Jakarta')); 
@@ -18,10 +20,10 @@ class NotificationService extends GetxService {
       tz.setLocalLocation(tz.UTC);
     }
 
-    // 2. Setup Ikon Android 
+    // Android icon setup
     const AndroidInitializationSettings androidInitSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // 3. Setup iOS 
+    // iOS setup
     const DarwinInitializationSettings iosInitSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -33,12 +35,11 @@ class NotificationService extends GetxService {
       iOS: iosInitSettings,
     );
 
-    // 4. Mulai Plugin (FIX: Pakai named parameter 'settings')
+    // Initialize the plugin
     await _notificationsPlugin.initialize(
-      settings: initSettings, 
+      settings: initSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // FIX: Pakai debugPrint untuk menghindari warning avoid_print
-        debugPrint('Notifikasi diklik! Payload: ${response.payload}'); 
+        debugPrint('Notification tapped! Payload: ${response.payload}');
       },
     );
     if (Platform.isAndroid) {
@@ -46,17 +47,17 @@ class NotificationService extends GetxService {
           _notificationsPlugin.resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
 
-      // Minta izin untuk memunculkan notifikasi
+      // Request notification permission
       await androidImplementation?.requestNotificationsPermission();
-      
-      // Minta izin untuk menjadwalkan alarm yang tepat
+
+      // Request exact alarm permission
       await androidImplementation?.requestExactAlarmsPermission();
     }
 
     return this;
   }
 
-  // Fungsi untuk MENJADWALKAN pengingat dengan banyak offset dan opsi alarm
+  /// Schedules reminders with multiple offsets and optional alarm sound.
   Future<void> scheduleTaskReminders({
     required String docId,
     required String title,
@@ -67,8 +68,8 @@ class NotificationService extends GetxService {
     required String alarmSound,
   }) async {
     for (String offset in reminders) {
-      DateTime scheduledTime = _calculateReminderTime(deadline, offset);
-      // Kalau waktunya udah lewat, nggak usah dijadwalin
+      DateTime scheduledTime = calculateReminderTime(deadline, offset);
+      // Skip if the scheduled time has already passed
       if (scheduledTime.isBefore(DateTime.now())) continue;
 
       int notificationId = (docId + offset).hashCode;
@@ -76,23 +77,23 @@ class NotificationService extends GetxService {
       AndroidNotificationDetails androidDetails;
       if (enableAlarm) {
         androidDetails = AndroidNotificationDetails(
-          'lifelog_alarm_channel_v3_$alarmSound', // Dynamic channel ID to bypass Android channel caching per sound
+          'lifelog_alarm_channel_v3_$alarmSound',
           'Alarms ($alarmSound)',
           channelDescription: 'High priority alarms for task deadlines',
           importance: Importance.max,
           priority: Priority.high,
           fullScreenIntent: true,
           additionalFlags: Int32List.fromList(<int>[4]), // FLAG_INSISTENT (loops sound)
-          sound: RawResourceAndroidNotificationSound(alarmSound), // Dynamic sound file name (no extension)
+          sound: RawResourceAndroidNotificationSound(alarmSound),
           playSound: true,
-          audioAttributesUsage: AudioAttributesUsage.alarm, // Specify this is an alarm sound
-          category: AndroidNotificationCategory.alarm, // Specify the category as alarm
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+          category: AndroidNotificationCategory.alarm,
         );
       } else {
         androidDetails = const AndroidNotificationDetails(
           'lifelog_reminder_channel',
           'Reminders',
-          channelDescription: 'Pengingat untuk tenggat waktu aktivitasmu',
+          channelDescription: 'Reminders for your activity deadlines',
           importance: Importance.max,
           priority: Priority.high,
           enableVibration: true,
@@ -111,22 +112,8 @@ class NotificationService extends GetxService {
     }
   }
 
-  DateTime _calculateReminderTime(DateTime deadline, String offset) {
-    switch (offset) {
-      case 'at_deadline': return deadline;
-      case '30_min': return deadline.subtract(const Duration(minutes: 30));
-      case '1_hour': return deadline.subtract(const Duration(hours: 1));
-      case '3_hours': return deadline.subtract(const Duration(hours: 3));
-      case '5_hours': return deadline.subtract(const Duration(hours: 5));
-      case '12_hours': return deadline.subtract(const Duration(hours: 12));
-      case '1_day': return deadline.subtract(const Duration(days: 1));
-      case '3_days': return deadline.subtract(const Duration(days: 3));
-      case '7_days': return deadline.subtract(const Duration(days: 7));
-      default: return deadline;
-    }
-  }
 
-  // 🔥 Fungsi untuk MEMBATALKAN semua pengingat terkait satu tugas
+  /// Cancels all reminders associated with a given task document.
   Future<void> cancelTaskReminders(String docId) async {
     const List<String> possibleOffsets = [
       'at_deadline', '30_min', '1_hour', '3_hours', '5_hours',
@@ -138,11 +125,11 @@ class NotificationService extends GetxService {
       await _notificationsPlugin.cancel(id: id);
     }
     
-    // Juga cancel ID legacy (docId.hashCode) in case ada notifikasi lama sebelum refactor
+    // Also cancel legacy ID (docId.hashCode) for backward compatibility
     await _notificationsPlugin.cancel(id: docId.hashCode);
   }
 
-  // Fetch semua notifikasi yang sedang aktif
+  /// Returns all currently pending scheduled notifications.
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _notificationsPlugin.pendingNotificationRequests();
   }

@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:life_log_frontend/app/routes/app_pages.dart';
 import '../controllers/timeline_controller.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/date_formatters.dart';
+import '../../../core/widgets/category_chips.dart';
+import '../../../core/widgets/entry_detail_bottom_sheet.dart';
+import '../../../core/widgets/completion_bottom_sheet.dart';
 
 class TimelineView extends GetView<TimelineController> {
   const TimelineView({super.key});
@@ -15,82 +18,7 @@ class TimelineView extends GetView<TimelineController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔥 UI SEARCH BAR & SORT
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: controller.searchController,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: 'Search notes or activities...',
-                        hintStyle: const TextStyle(color: Colors.white38),
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          color: Colors.white54,
-                          size: 20,
-                        ),
-                        suffixIcon: Obx(
-                          () => controller.searchQuery.value.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(
-                                    Icons.clear,
-                                    color: Colors.white54,
-                                    size: 16,
-                                  ),
-                                  onPressed: () =>
-                                      controller.searchController.clear(),
-                                )
-                              : const SizedBox(),
-                        ),
-                        filled: true,
-                        fillColor: AppColors.surface,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Obx(
-                    () => Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white12),
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          controller.isDescending.value
-                              ? Icons.sort_rounded
-                              : Icons.filter_list_alt,
-                          color: AppColors.primary,
-                        ),
-                        onPressed: () => controller.toggleSort(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildSearchBar(),
 
             // Timeline list content
             Expanded(
@@ -107,15 +35,15 @@ class TimelineView extends GetView<TimelineController> {
 
                   final allDocs = snapshot.data?.docs ?? [];
 
-                  // Obx wraps only the filtered list rebuild on search query changes,
-                  // without interrupting the Firestore stream connection.
+                  // Obx wraps only the filtered list rebuild on search/category
+                  // changes, without interrupting the Firestore stream.
                   return Obx(() {
-                    final String query = controller.searchQuery.value
-                        .toLowerCase();
+                    final String query =
+                        controller.searchQuery.value.toLowerCase();
                     final String currentCategory =
                         controller.selectedCategory.value;
 
-                    // Extract unique categories dynamically from the data
+                    // Extract unique categories dynamically
                     final Set<String> uniqueCategories = {'ALL'};
                     for (var doc in allDocs) {
                       final data = doc.data() as Map<String, dynamic>;
@@ -130,24 +58,22 @@ class TimelineView extends GetView<TimelineController> {
 
                     final filteredDocs = allDocs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
-                      final title = (data['title']?.toString() ?? '')
-                          .toLowerCase();
-                      final desc = (data['description']?.toString() ?? '')
-                          .toLowerCase();
-                      final note = (data['note']?.toString() ?? '')
-                          .toLowerCase();
-                      final category = (data['category']?.toString() ?? '')
-                          .toLowerCase();
+                      final title =
+                          (data['title']?.toString() ?? '').toLowerCase();
+                      final desc =
+                          (data['description']?.toString() ?? '').toLowerCase();
+                      final note =
+                          (data['note']?.toString() ?? '').toLowerCase();
+                      final category =
+                          (data['category']?.toString() ?? '').toLowerCase();
 
-                      final searchMatch =
-                          query.isEmpty ||
+                      final searchMatch = query.isEmpty ||
                           title.contains(query) ||
                           desc.contains(query) ||
                           note.contains(query) ||
                           category.contains(query);
 
-                      final catMatch =
-                          currentCategory == 'ALL' ||
+                      final catMatch = currentCategory == 'ALL' ||
                           (data['category']?.toString().toUpperCase() ??
                                   'UNCATEGORIZED') ==
                               currentCategory;
@@ -157,7 +83,12 @@ class TimelineView extends GetView<TimelineController> {
 
                     return Column(
                       children: [
-                        _buildCategoryChips(dynamicCategories),
+                        // Shared category chips widget
+                        CategoryChips(
+                          categories: dynamicCategories,
+                          selectedCategory: currentCategory,
+                          onCategorySelected: controller.setCategory,
+                        ),
                         Expanded(
                           child: filteredDocs.isEmpty
                               ? Center(
@@ -179,10 +110,10 @@ class TimelineView extends GetView<TimelineController> {
                                   ),
                                   itemCount: filteredDocs.length,
                                   itemBuilder: (context, index) {
-                                    final data =
-                                        filteredDocs[index].data()
-                                            as Map<String, dynamic>;
-                                    final String docId = filteredDocs[index].id;
+                                    final data = filteredDocs[index].data()
+                                        as Map<String, dynamic>;
+                                    final String docId =
+                                        filteredDocs[index].id;
                                     final bool isLast =
                                         index == filteredDocs.length - 1;
 
@@ -202,14 +133,15 @@ class TimelineView extends GetView<TimelineController> {
                                               ?.toDate();
                                     }
 
-                                    final bool showHeader =
-                                        index == 0 ||
-                                        !_isSameDay(currentDate, previousDate);
+                                    final bool showHeader = index == 0 ||
+                                        !DateFormatters.isSameDay(
+                                            currentDate, previousDate);
 
-                                    // Timeline content with Dismissible swipe-to-delete
+                                    // Timeline content with swipe-to-delete
                                     Widget timelineContent = Dismissible(
                                       key: Key(docId),
-                                      direction: DismissDirection.endToStart,
+                                      direction:
+                                          DismissDirection.endToStart,
                                       background: Container(
                                         margin: const EdgeInsets.only(
                                           bottom: 24,
@@ -218,9 +150,8 @@ class TimelineView extends GetView<TimelineController> {
                                           color: Colors.redAccent.withValues(
                                             alpha: 0.8,
                                           ),
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                         ),
                                         alignment: Alignment.centerRight,
                                         padding: const EdgeInsets.only(
@@ -244,7 +175,8 @@ class TimelineView extends GetView<TimelineController> {
                                             const SizedBox(width: 16),
                                             Expanded(
                                               child: Padding(
-                                                padding: const EdgeInsets.only(
+                                                padding:
+                                                    const EdgeInsets.only(
                                                   bottom: 24.0,
                                                 ),
                                                 child: _buildLogCard(
@@ -265,7 +197,8 @@ class TimelineView extends GetView<TimelineController> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           _buildDateHeader(
-                                            _getDateHeader(currentDate),
+                                            DateFormatters.formatDateHeader(
+                                                currentDate),
                                           ),
                                           timelineContent,
                                         ],
@@ -278,7 +211,7 @@ class TimelineView extends GetView<TimelineController> {
                         ),
                       ],
                     );
-                  }); // Close Obx
+                  });
                 },
               ),
             ),
@@ -288,51 +221,83 @@ class TimelineView extends GetView<TimelineController> {
     );
   }
 
-  // --- Sub Widgets ---
+  // --- Private Helper Widgets ---
 
-  Widget _buildCategoryChips(List<String> categories) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Obx(
-        () => Row(
-          children: categories.map((cat) {
-            final isActive = controller.selectedCategory.value == cat;
-            return GestureDetector(
-              onTap: () => controller.setCategory(cat),
-              child: Container(
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller.searchController,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Search notes or activities...',
+                hintStyle: const TextStyle(color: Colors.white38),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: Colors.white54,
+                  size: 20,
                 ),
-                decoration: BoxDecoration(
-                  color: isActive ? AppColors.primary : AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isActive ? AppColors.primary : Colors.white12,
-                  ),
-                  boxShadow: isActive
-                      ? [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 8,
+                suffixIcon: Obx(
+                  () => controller.searchQuery.value.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(
+                            Icons.clear,
+                            color: Colors.white54,
+                            size: 16,
                           ),
-                        ]
-                      : [],
+                          onPressed: () =>
+                              controller.searchController.clear(),
+                        )
+                      : const SizedBox(),
                 ),
-                child: Text(
-                  cat,
-                  style: TextStyle(
-                    color: isActive ? Colors.black : Colors.white70,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                filled: true,
+                fillColor: AppColors.surface,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
                   ),
                 ),
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Obx(
+            () => Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: IconButton(
+                icon: Icon(
+                  controller.isDescending.value
+                      ? Icons.sort_rounded
+                      : Icons.filter_list_alt,
+                  color: AppColors.primary,
+                ),
+                onPressed: () => controller.toggleSort(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -377,7 +342,6 @@ class TimelineView extends GetView<TimelineController> {
   }
 
   Widget _buildLogCard(Map<String, dynamic> data, String docId) {
-    // Extract data
     final String title = data['title']?.toString() ?? 'No Title';
     final String category = data['category']?.toString() ?? 'UNCATEGORIZED';
     final String note = data['note']?.toString() ?? '';
@@ -391,23 +355,23 @@ class TimelineView extends GetView<TimelineController> {
       timeStr = '$hour:$minute';
     }
 
-    // Check entry type
     final bool isTask = data['isTask'] == true;
     final bool isDone = data['isDone'] == true;
-
-    // Determine visual style
     final bool isPendingTask = isTask && !isDone;
 
     // Use subdued style for pending tasks
-    final Color cardColor = isPendingTask
-        ? Colors.transparent
-        : AppColors.surface;
+    final Color cardColor =
+        isPendingTask ? Colors.transparent : AppColors.surface;
     final Color borderColor = isPendingTask
         ? AppColors.primary.withValues(alpha: 0.3)
         : AppColors.primary.withValues(alpha: 0.1);
 
     return InkWell(
-      onTap: () => _showDetailBottomSheet(data, docId),
+      onTap: () => showEntryDetailBottomSheet(
+        data: data,
+        docId: docId,
+        onDelete: () => controller.deleteEntry(docId),
+      ),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -430,7 +394,6 @@ class TimelineView extends GetView<TimelineController> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 // Time display
                 Row(
                   children: [
@@ -487,14 +450,19 @@ class TimelineView extends GetView<TimelineController> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
-                  onPressed: () => _showCompletionPrompt(docId, title),
+                  onPressed: () => showCompletionBottomSheet(
+                    title: title,
+                    noteController: controller.completionNoteController,
+                    onConfirm: () => controller.completeTask(docId),
+                  ),
                   icon: const Icon(Icons.check, size: 16, color: Colors.white),
                   label: const Text(
                     'Complete',
                     style: TextStyle(color: Colors.white, fontSize: 12),
                   ),
                   style: TextButton.styleFrom(
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                    backgroundColor:
+                        AppColors.primary.withValues(alpha: 0.2),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -511,324 +479,14 @@ class TimelineView extends GetView<TimelineController> {
     );
   }
 
-  void _showCompletionPrompt(String docId, String title) {
-    controller.completionNoteController.clear();
-
-    Get.bottomSheet(
-      Builder(
-        builder: (context) {
-          return Container(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              left: 24,
-              right: 24,
-              top: 24,
-            ),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  Text(
-                    'Complete the Task',
-                    style: Get.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 14,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  TextField(
-                    controller: controller.completionNoteController,
-                    maxLines: 3,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText:
-                          'Any insights or lessons from this activity? (Optional)',
-                      hintStyle: const TextStyle(color: Colors.white38),
-                      filled: true,
-                      fillColor: Colors.black12,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () => controller.completeTask(docId),
-                      icon: const Icon(Icons.check, color: Colors.white),
-                      label: const Text(
-                        'Mark as Done',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-      isScrollControlled: true,
-    );
-  }
-
-  void _showDetailBottomSheet(Map<String, dynamic> data, String docId) {
-    final title = data['title']?.toString() ?? 'No Title';
-    final category = data['category']?.toString() ?? 'UNCATEGORIZED';
-    final desc = data['description']?.toString() ?? '';
-    final note = data['note']?.toString() ?? '';
-    final isDone = data['isDone'] == true;
-
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    category,
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  Icon(
-                    isDone ? Icons.check_circle : Icons.hourglass_empty,
-                    color: isDone ? AppColors.primary : Colors.orange,
-                    size: 20,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              Text(
-                title,
-                style: Get.textTheme.displayMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Show description if present
-              if (desc.isNotEmpty) ...[
-                const Text(
-                  'Deskripsi:',
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  desc,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Show insight/note if present
-              if (note.isNotEmpty) ...[
-                const Text(
-                  'Notes / Insight:',
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black26,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    note,
-                    style: const TextStyle(
-                      fontStyle: FontStyle.italic,
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              if (desc.isEmpty && note.isEmpty) const SizedBox(height: 8),
-
-              const Divider(color: Colors.white12),
-              const SizedBox(height: 16),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Get.back();
-                        // Navigate to edit form
-                        Get.toNamed(
-                          Routes.addEntry,
-                          arguments: {
-                            'isEdit': true,
-                            'docId': docId,
-                            'data': data,
-                          },
-                        );
-                      },
-                      icon: const Icon(Icons.edit, color: Colors.white),
-                      label: const Text(
-                        'Edit',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: Colors.white24),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => controller.deleteEntry(docId),
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        color: Colors.white,
-                      ),
-                      label: const Text(
-                        'Hapus',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent.withValues(
-                          alpha: 0.8,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-      isScrollControlled: true,
-    );
-  }
-
-  // Checks whether two dates are the same calendar day
-  bool _isSameDay(DateTime? date1, DateTime? date2) {
-    if (date1 == null || date2 == null) return false;
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
-  }
-
-  // Formats a date into header text (Today, Yesterday, or "24 Apr 2026")
-  String _getDateHeader(DateTime? date) {
-    if (date == null) return 'Unknown';
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final targetDate = DateTime(date.year, date.month, date.day);
-
-    if (targetDate == today) return 'TODAY';
-    if (targetDate == yesterday) return 'YESTERDAY';
-
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Ags',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
-
-  // Date header UI widget
   Widget _buildDateHeader(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0, top: 12.0),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
@@ -847,7 +505,8 @@ class TimelineView extends GetView<TimelineController> {
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(child: Divider(color: Colors.white12, thickness: 1.5)),
+          const Expanded(
+              child: Divider(color: Colors.white12, thickness: 1.5)),
         ],
       ),
     );
